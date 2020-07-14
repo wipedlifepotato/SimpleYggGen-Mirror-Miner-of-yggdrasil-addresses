@@ -6,7 +6,7 @@
 /*
  * В первой бэта-версии майнер ищет исключительно двойное двоеточие.
  * По опыту скажу, это месяцы. Однако для энтузиастов предоставляю исходный текст
- * программы. Цель майнинга можно изменить в строке №73.
+ * программы. Цель майнинга можно изменить в строке №82.
  *
  * Предложения по коду присылайте на почту: acetone-at-disroot.org
  *
@@ -79,7 +79,7 @@ int main() {
     std::ifstream test_address_input("sygaddr.tmp") ;
     getline(test_address_input, test_address) ;
         std::cout << "# " << k << " #\t"<< test_address << "\t #\n";
-    if ( test_address.find("12") != std::string::npos ) {
+    if ( test_address.find("::") != std::string::npos ) {
       std::cout << "\n[OK ] MATCH FOUND!\n" ;
       test_address_input.close() ;
       system("del sygaddr.tmp") ;
