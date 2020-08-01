@@ -2,7 +2,7 @@
  * Спасибо PurpleI2P Project за активное содействие в написании этого кода.
  * notabug.org/acetone/SimpleYggGen-CPP
  *
- * acetone, 2020 (c) GPLv3
+ * acetone (c) GPLv3
  *
  */
 
@@ -92,10 +92,10 @@ void miner()
 
 	// sha512 --------------------------------
 		SHA512(PublicKey, 32, HashValue);
-		std::bitset<8> bits_header(HashValue[0]);  		 // получаем биты первого байта хэша
-		s_first4bytes = bits_header.to_string();   	  	 // сохраняем их в стринг
+		std::bitset<8> bits_header(HashValue[0]);		// получаем биты первого байта хэша
+		s_first4bytes = bits_header.to_string(); 		// сохраняем их в стринг
 
-		for(int y = 1; y < 4; ++y)						 // добавляем еще 3 байта
+		for(int y = 1; y < 4; ++y)						// добавляем еще 3 байта
 		{
 		std::bitset<8> bits_header_temp(HashValue[y]);
 		s_first4bytes += bits_header_temp.to_string();
@@ -144,7 +144,6 @@ void miner()
 			std::cout << "-";
 			std::cout.flush();
 		}
-
 	}
 }
 
