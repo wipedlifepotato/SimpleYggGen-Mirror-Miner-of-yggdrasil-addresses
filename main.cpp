@@ -80,7 +80,6 @@ void miner()
 		int bit = 0;				// счетчик для подсчета единиц
 		std::string s_first4bytes;  // переменная для хранения хэша
 
-		EVP_PKEY_free(Pkey);
 		Pkey = nullptr;
 		Ctx = EVP_PKEY_CTX_new_id (NID_X25519, NULL);
 
@@ -141,9 +140,11 @@ void miner()
 		++displayc;
 		if(displayc % 10000 == 0)
 		{
-			std::cout << "-";
-			std::cout.flush();
+			std::cerr << "-";
+			std::cerr.flush();
 		}
+		EVP_PKEY_CTX_free(Ctx);
+		EVP_PKEY_free(Pkey);
 	}
 }
 
