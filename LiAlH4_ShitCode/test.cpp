@@ -1,18 +1,53 @@
 //#include<openssl/evp.h>
-#include<openssl/sha.h>
-#include<string.h>
-#include<arpa/inet.h>
-#include<sys/socket.h>
-#include <sys/types.h> 
-#include<iostream>
-#include<iomanip>
-#include<nacl/crypto_box.h>
-#define KEYSIZE 32
 
-typedef struct {
-     unsigned char PublicKey[crypto_box_PUBLICKEYBYTES];
-     unsigned char PrivateKey[crypto_box_SECRETKEYBYTES];
-}BoxKeys;
+#include"generator.h"
+#include<sstream>
+
+std::string getFirst4Byte(unsigned char HashValue[SHA512_DIGEST_LENGTH], BoxKeys keys){
+		int bit = 0;				// счетчик для подсчета единиц
+		int bitcount = 10;
+		uint8_t PublicKeyBest[32];
+		uint8_t PrivateKeyBest[32];
+
+		std::string s_first4bytes;  // переменная для хранения хэша
+
+		std::bitset<8> bits_header(HashValue[0]);		// получаем биты первого байта хэша
+		s_first4bytes = bits_header.to_string(); 		// сохраняем их в стринг
+
+		for(int y = 1; y < 4; ++y)						// добавляем еще 3 байта
+		{
+		std::bitset<8> bits_header_temp(HashValue[y]);
+		s_first4bytes += bits_header_temp.to_string();
+		}
+	// bits ----------------------------------
+		bit = 0;
+		while(s_first4bytes[bit] != '0' && s_first4bytes[bit] == '1' ) // цикл по-битового анализа
+		{
+		++bit;
+			if(bit > bitcount) // сохраняем связку лучших ключей
+			{
+				bitcount = bit;
+				for(int z = 0; z < 32; ++z)
+				{
+					PublicKeyBest[z] = keys.PublicKey[z];
+				}
+				for(int z = 0; z < 32; ++z)
+				{
+					PrivateKeyBest[z] = keys.PrivateKey[z];
+				}
+
+				// outout -------------------------------
+				if(s_first4bytes[bit] == '0')
+				{
+					auto ret = std::ostringstream();
+					ret << 2 << std::setw(2) << std::setfill('0') << std::hex << bitcount;
+					return ret.str();
+				}
+			}
+		}
+		return "";
+}
+
 
 BoxKeys getKeyPair(void){
      	BoxKeys keys;
@@ -24,7 +59,7 @@ BoxKeys getKeyPair(void){
 void getSHA512(void* data, unsigned char * hash){
 		SHA512_CTX sha512;
 		SHA512_Init(&sha512);
-		SHA512_Update(&sha512, data, KEYSIZE);
+		SHA512_Update(&sha512, data, crypto_box_PUBLICKEYBYTES);
 		SHA512_Final(hash, &sha512);
 }
 /*
@@ -112,7 +147,7 @@ func AddrForNodeID(nid *crypto.NodeID) *Address {
 
 
 */
-char * convertSHA512ToIPv6(unsigned char h[SHA512_DIGEST_LENGTH]){
+char * convertSHA512ToIPv6(unsigned char h[SHA512_DIGEST_LENGTH], BoxKeys myKeys){
 		char hash[128];
 		convertSHA512ToSum(h, hash);
 
@@ -147,7 +182,9 @@ char * convertSHA512ToIPv6(unsigned char h[SHA512_DIGEST_LENGTH]){
 			for(int y=0; y <= 3; y++)
 				if ( (temp[i] >> y) & 1 ) countones++;
 		}
-		std::cout << "\nAddress:    [2" << std::setw(2) << std::setfill('0') << std::hex << countones << ":...]" << std::endl;
+		auto first4byte = getFirst4Byte(h, myKeys);
+		if ( first4byte == "" ) first4byte ="Not Found";
+		std::cout << "[" << first4byte << "]" << std::endl;
 		struct in6_addr tmpAdr;
 		tmpAdr.s6_addr[0]=0x02;
 		for(int i =1; i < 16; i++)
@@ -188,7 +225,9 @@ int miner(void)
 		}
 		puts("");
 		puts("IPv6:");
-		auto ipv6=convertSHA512ToIPv6(hash);
+		
+
+		auto ipv6=convertSHA512ToIPv6(hash, myKeys);
 		printf("%s\n", ipv6);
 		free(ipv6);
 		puts("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
