@@ -1,13 +1,19 @@
 /*
  * Спасибо PurpleI2P Project за активное содействие в написании этого кода.
- * acetone, 2020 (c) GPLv3
  * notabug.org/acetone/SimpleYggGen-CPP
  *
+ * acetone, 2020 (c) GPLv3
+ *
  */
+
 #include <openssl/evp.h> // библиотека OpenSSL
+#include <openssl/sha.h>
 #include <iostream>      // вывод на экран
 #include <iomanip>       // форматированный вывод строк
 #include <ctime>         // системное время
+#include <bitset>        // по-битовое чтение
+
+////////////////////////////////////////////////// Заставка и прочая вода
 
 const char randomtable[90] =
 {
@@ -24,79 +30,129 @@ const char randomtable[90] =
 
 std::string getrandom(int entropy, unsigned int size_of_line)
 {
-  std::string random_value;
-  while(random_value.size() < size_of_line)
-  {
-      random_value += randomtable[(std::rand() % entropy)];
-  }
-   random_value.shrink_to_fit();
-   return random_value;
+	std::string random_value;
+	while(random_value.size() < size_of_line)
+	{
+		random_value += randomtable[(std::rand() % entropy)];
+	}
+	random_value.shrink_to_fit();
+	return random_value;
 }
 
 void intro()
 {
-  int rv = 60;
-  std::cout << std::endl << getrandom(2,44)                                                                                                                                                        << " # -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~ " << std::endl
-            << getrandom(rv, 2)  << "          " << getrandom(rv, 5) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "          " << getrandom(rv, 2)                                  << " # [     SimpleYggGen C++ 1.0 2020-08     ] " << std::endl
-            << getrandom(rv, 2)  << "  "         << getrandom(rv,13) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "  "         << getrandom(rv, 10)                                 << " # [ notabug.org/acetone/SimpleYggGen-CPP ] " << std::endl
-            << getrandom(rv, 2)  << "          " << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 3)   << "     " << getrandom(rv, 2) << " # [           acetone (c) GPLv3          ] " << std::endl
-            << getrandom(rv, 10) <<         "  " << getrandom(rv,13) <<         "  "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 6)   <<    "  " << getrandom(rv, 2) << " # [                                      ] " << std::endl
-            << getrandom(rv, 2)  << "          " << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "          " << getrandom(rv, 2)                                  << " # [   OpenSSL inside: x25519 -> sha512   ] " << std::endl
-            << getrandom(2,44)                                                                                                                                                                     << " # ";
-
-  for(int k = 1; k < 41; ++k) {
-    if(k%2==0) {
-        std::cout << "-";
-      } else {
-        std::cout << "~";
-      }
-  }
-  std::cout << std::endl;
+	srand(time(NULL));
+	int rv = 60;
+	std::cout << std::endl
+	<< "|                                      |" << getrandom(2,44)   << std::endl
+	<< "| SimpleYggGen C++ 1.0-headhunter 2020 |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "          " << getrandom(rv, 2)	<< std::endl
+	<< "|   OpenSSL inside: x25519 -> sha512   |" << getrandom(rv, 2)  << "  "          << getrandom(rv,13) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "  "         << getrandom(rv, 10)	<< std::endl
+	<< "| notabug.org/acetone/SimpleYggGen-CPP |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 3)	<< "     " << getrandom(rv, 2) << std::endl
+	<< "|           acetone (c) GPLv3          |" << getrandom(rv, 10) <<         "  "  << getrandom(rv,13) <<         "  "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 6)	<<    "  " << getrandom(rv, 2) << std::endl
+	<< "|                                      |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "          " << getrandom(rv, 2)	<< std::endl
+	<< "|     "  << __DATE__ << "         "  << __TIME__ <<  "     |"	    << getrandom(2,44) << std::endl;
 }
+
+////////////////////////////////////////////////// Суть вопроса
 
 void miner()
 {
-  EVP_PKEY_CTX * Ctx;
-  EVP_PKEY * Pkey = nullptr;
+	// x25519 -----------------------
+	uint8_t PublicKey[32];
+	uint8_t PrivateKey[32];
+	size_t lenpub = 32;
+	size_t lenpriv = 32;
 
-  Ctx = EVP_PKEY_CTX_new_id (NID_X25519, NULL);
+	EVP_PKEY_CTX * Ctx;
+	EVP_PKEY * Pkey = nullptr;
 
-  uint8_t PublicKey[32];
-  uint8_t PrivateKey[32];
+	unsigned char HashValue[128];
 
-  EVP_PKEY_keygen_init (Ctx);
-  EVP_PKEY_keygen (Ctx, &Pkey);
+	uint8_t PublicKeyBest[32];
+	uint8_t PrivateKeyBest[32];
 
-  size_t lenpub = 32;
-  EVP_PKEY_get_raw_public_key (Pkey, PublicKey, &lenpub);
+	int bitcount = 10; 	// переменная для хранения наибольшего количества единиц
+	int displayc = 0;
 
-  size_t lenpriv = 32;
-  EVP_PKEY_get_raw_private_key (Pkey, PrivateKey, &lenpriv);
+	// ------------------------ ОСНОВНОЙ ЦИКЛ
+	while(bitcount < 255)
+	{
+		int bit = 0;				// счетчик для подсчета единиц
+		std::string s_first4bytes;  // переменная для хранения хэша
 
-  std::cout << std::endl << std::left;
-  // std::cout << "\nITERATION: [" << std::setw(24) << "500" << "] ADDRESS: [" << std::setw(38) << "200:a3d2:b6c3::a138:7836:edef" << "]\n";
-  std::cout << "Public:  ";
-  for(int i = 0; i < 32; ++i)
-  {
-    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)PublicKey[i];
-  }
-  std::cout << std::endl;
+		EVP_PKEY_free(Pkey);
+		Pkey = nullptr;
+		Ctx = EVP_PKEY_CTX_new_id (NID_X25519, NULL);
 
-  std::cout << "Private: ";
-  for(int i = 0; i < 32; ++i)
-  {
-    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)PrivateKey[i];
-  }
-  std::cout << std::endl;
+		EVP_PKEY_keygen_init (Ctx);
+		EVP_PKEY_keygen (Ctx, &Pkey);
 
+		EVP_PKEY_get_raw_public_key (Pkey, PublicKey, &lenpub);
+		EVP_PKEY_get_raw_private_key (Pkey, PrivateKey, &lenpriv);
+
+	// sha512 --------------------------------
+		SHA512(PublicKey, 32, HashValue);
+		std::bitset<8> bits_header(HashValue[0]);  		 // получаем биты первого байта хэша
+		s_first4bytes = bits_header.to_string();   	  	 // сохраняем их в стринг
+
+		for(int y = 1; y < 4; ++y)						 // добавляем еще 3 байта
+		{
+		std::bitset<8> bits_header_temp(HashValue[y]);
+		s_first4bytes += bits_header_temp.to_string();
+		}
+
+	// bits ----------------------------------
+		bit = 0;
+		while(s_first4bytes[bit] != '0' && s_first4bytes[bit] == '1' ) // цикл по-битового анализа
+		{
+		++bit;
+			if(bit > bitcount) // сохраняем связку лучших ключей
+			{
+				bitcount = bit;
+				for(int z = 0; z < 32; ++z)
+				{
+					PublicKeyBest[z] = PublicKey[z];
+				}
+				for(int z = 0; z < 32; ++z)
+				{
+					PrivateKeyBest[z] = PrivateKey[z];
+				}
+
+				// outout -------------------------------
+				if(s_first4bytes[bit] == '0')
+				{
+					std::cout << "\nAddress:    [2" << std::setw(2) << std::setfill('0') << std::hex << bitcount << ":...]" << std::endl;
+					std::cout << "PublicKey:  ";
+					for(int i = 0; i < 32; ++i)
+					{
+						std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)PublicKeyBest[i];
+					}
+					std::cout << std::endl;
+
+					std::cout << "PrivateKey: ";
+					for(int i = 0; i < 32; ++i)
+					{
+						std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)PrivateKeyBest[i];
+					}
+					std::cout << std::endl;
+				}
+			}
+		}
+		++displayc;
+		if(displayc % 10000 == 0)
+		{
+			std::cout << "-";
+			std::cout.flush();
+		}
+
+	}
 }
 
 // ------------------------------------------------------
 
 int main()
 {
-  srand(time(NULL));
-  intro();
-  miner();
-  return 0;
+	intro();
+	miner();
+	return 0;
 }
