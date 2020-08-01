@@ -1,4 +1,5 @@
 #include"generator.h"
+//#include<sstream>
 BoxKeys getKeyPair(void){
      	BoxKeys keys;
 	size_t lenpub = KEYSIZE;
@@ -26,6 +27,34 @@ func GetNodeID(pub *BoxPubKey) *NodeID {
 	return (*NodeID)(&h)
 }
 */
+
+int getOnes(unsigned char HashValue[SHA512_DIGEST_LENGTH]){
+		int bitcount = 0, bit =0; 
+		std::bitset<8> bits_header(HashValue[0]);		// получаем биты первого байта хэша
+		std::string s_first4bytes = bits_header.to_string(); 		// сохраняем их в стринг
+		for(int y = 1; y < 4; ++y)						// добавляем еще 3 байта
+		{
+			std::bitset<8> bits_header_temp(HashValue[y]);
+			s_first4bytes += bits_header_temp.to_string();
+		}
+
+		bit = 0;
+
+		while(s_first4bytes[bit] != '0' && s_first4bytes[bit] == '1' ) // цикл по-битового анализа
+		{
+		++bit;
+			if(bit > bitcount) // сохраняем связку лучших ключей
+			{
+				bitcount = bit;
+				// outout -------------------------------
+				if(s_first4bytes[bit] == '0')
+				{
+					return bitcount;
+				}//if
+			}
+		}//while
+		return bitcount;
+}//endfunc
 void getSHA512(void* data, unsigned char * hash){
 		SHA512_CTX sha512;
 		SHA512_Init(&sha512);
@@ -53,18 +82,16 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 
 		char byte;
 		bool done;
-		char ones;
-		int nBits=0;
-		char temp[16];
+
+		unsigned char nBits=0;
+		char temp[8*SHA512_DIGEST_LENGTH];
 		int i=0;
-		int z=0;
+
 		// 2 / 4 / 8 -> приближенные значения
-		for (auto idx = 0; idx < 2*SHA512_DIGEST_LENGTH; idx++) {
+		for (auto idx = 0; idx < 8*SHA512_DIGEST_LENGTH; idx++) {
 			char bit = (hash[idx/8] & (0x80 >> (unsigned char)(idx%8))) >> (unsigned char)(7-(idx%8));
-			if (!done && bit != 0) {
-				ones++;
+			if (!done && bit != 0) 
 				continue;
-			}
 			if (!done && bit == 0) {
 				done = true;
 				continue; // FIXME? this assumes that ones <= 127, probably only worth changing by using a variable length uint64, but that would require changes to the addressing scheme, and I'm not sure ones > 127 is realistic
@@ -87,12 +114,15 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 	copy(addr[len(prefix)+1:], temp)
 */
 		tmpAdr.s6_addr[0] = 0x02;
-		tmpAdr.s6_addr[1] = ones;
-		for(int i =2; i < 16; i++)
+		tmpAdr.s6_addr[1] = getOnes(hash);
+		for(int i =2; i < sizeof(temp); i++)
 			tmpAdr.s6_addr[i]=temp[i];
 		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
-		//std::cout << "adress: " << addr  << std::endl;
+		for (int i = 7; i >= 4; i--)
+			addr[i]='?';
+		for(int i = strlen(addr); i>=(strlen(addr)-4);i--) //38 
+			addr[i]='?';
 		return addr;
 }	
 int miner(void)

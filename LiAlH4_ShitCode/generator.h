@@ -6,6 +6,8 @@
 #include<iostream>
 #include<iomanip>
 #include<openssl/evp.h>
+#include<openssl/bn.h>
+
 #include<bitset>
 #define KEYSIZE 32
 typedef struct {
