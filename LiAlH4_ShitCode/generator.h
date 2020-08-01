@@ -5,11 +5,14 @@
 #include <sys/types.h> 
 #include<iostream>
 #include<iomanip>
-#include<nacl/crypto_box.h>
+#include<openssl/evp.h>
 #include<bitset>
+#define KEYSIZE 32
 typedef struct {
-     unsigned char PublicKey[crypto_box_PUBLICKEYBYTES];
-     unsigned char PrivateKey[crypto_box_SECRETKEYBYTES];
+    uint8_t PublicKey[KEYSIZE];
+    uint8_t PrivateKey[KEYSIZE];
+    // unsigned char PublicKey[crypto_box_PUBLICKEYBYTES];
+    // unsigned char PrivateKey[crypto_box_SECRETKEYBYTES];
 }BoxKeys;
 BoxKeys getKeyPair(void);
 void getSHA512(void* data, unsigned char * hash);

@@ -1,9 +1,22 @@
-//#include<openssl/evp.h>
-
 #include"generator.h"
 BoxKeys getKeyPair(void){
      	BoxKeys keys;
-     	crypto_box_keypair(keys.PublicKey,keys.PrivateKey);
+	size_t lenpub = KEYSIZE;
+	size_t lenpriv = KEYSIZE;
+
+	EVP_PKEY_CTX * Ctx;
+	EVP_PKEY * Pkey = nullptr;
+	Ctx = EVP_PKEY_CTX_new_id (NID_X25519, NULL);
+
+	EVP_PKEY_keygen_init (Ctx);
+	EVP_PKEY_keygen (Ctx, &Pkey);
+
+	EVP_PKEY_get_raw_public_key (Pkey, keys.PublicKey, &lenpub);
+	EVP_PKEY_get_raw_private_key (Pkey, keys.PrivateKey, &lenpriv);
+
+	EVP_PKEY_CTX_free(Ctx);
+	EVP_PKEY_free(Pkey);    
+ 	//crypto_box_keypair(keys.PublicKey,keys.PrivateKey);
 	return keys;
 }
 /*
@@ -16,7 +29,7 @@ func GetNodeID(pub *BoxPubKey) *NodeID {
 void getSHA512(void* data, unsigned char * hash){
 		SHA512_CTX sha512;
 		SHA512_Init(&sha512);
-		SHA512_Update(&sha512, data, crypto_box_PUBLICKEYBYTES);
+		SHA512_Update(&sha512, data, KEYSIZE);
 		SHA512_Final(hash, &sha512);
 }
 
@@ -67,8 +80,15 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 		
 		//std::cout << "I:" << i << std::endl;
 		struct in6_addr tmpAdr;
-		tmpAdr.s6_addr[0] = 0x2;
-		for(int i =1; i < 16; i++)
+/*
+	prefix := GetPrefix()
+	copy(addr[:], prefix[:])
+	addr[len(prefix)] = ones
+	copy(addr[len(prefix)+1:], temp)
+*/
+		tmpAdr.s6_addr[0] = 0x02;
+		tmpAdr.s6_addr[1] = ones;
+		for(int i =2; i < 16; i++)
 			tmpAdr.s6_addr[i]=temp[i];
 		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
@@ -85,12 +105,12 @@ int miner(void)
 
 		auto myKeys = getKeyPair();
 		puts("Public: ");
-		for(int i = 0; i < crypto_box_PUBLICKEYBYTES; ++i)
+		for(int i = 0; i < KEYSIZE; ++i)
 		{
         		printf("%02x", myKeys.PublicKey[i]);// two byte 
 		}
 		puts("\nPrivate: ");
-		for(int i = 0; i < crypto_box_SECRETKEYBYTES; ++i)
+		for(int i = 0; i < KEYSIZE; ++i)
 		{
         		printf("%02x", myKeys.PrivateKey[i]);// two byte 
 		}

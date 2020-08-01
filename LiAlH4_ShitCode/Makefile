@@ -1,4 +1,4 @@
-libraries= -lcrypto -lnacl -lrandombytes
+libraries= -lcrypto
 compiler = g++
 files= test.cpp
 programname=test
