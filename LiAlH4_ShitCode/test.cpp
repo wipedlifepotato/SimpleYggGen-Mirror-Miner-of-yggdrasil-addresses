@@ -115,7 +115,8 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 */
 		tmpAdr.s6_addr[0] = 0x02;
 		tmpAdr.s6_addr[1] = getOnes(hash);
-		for(int i =2; i < sizeof(temp); i++)
+		//sizeof(temp) можно поменять просто на 16
+		for(int i =2; i < sizeof(temp); i++) // Тут на самом деле 16 байтов, и это очень не хорошо
 			tmpAdr.s6_addr[i]=temp[i];
 		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
