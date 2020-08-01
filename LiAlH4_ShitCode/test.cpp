@@ -1,4 +1,4 @@
-#include<openssl/evp.h>
+//#include<openssl/evp.h>
 #include<openssl/sha.h>
 #include<string.h>
 #include<arpa/inet.h>
@@ -6,26 +6,17 @@
 #include <sys/types.h> 
 #include<iostream>
 #include<iomanip>
-
+#include<nacl/crypto_box.h>
 #define KEYSIZE 32
+
 typedef struct {
-	uint8_t PublicKey[KEYSIZE];
-	uint8_t PrivateKey[KEYSIZE];
+     unsigned char PublicKey[crypto_box_PUBLICKEYBYTES];
+     unsigned char PrivateKey[crypto_box_SECRETKEYBYTES];
 }BoxKeys;
 
 BoxKeys getKeyPair(void){
-	size_t lenpub = KEYSIZE;
-	size_t lenpriv = KEYSIZE;
-	BoxKeys keys;
-	EVP_PKEY_CTX * Ctx;
-	EVP_PKEY * Pkey=NULL;	
-	Ctx = EVP_PKEY_CTX_new_id (NID_X25519, NULL);
-	EVP_PKEY_keygen_init(Ctx);
- 	EVP_PKEY_keygen(Ctx, &Pkey);
-	EVP_PKEY_CTX_free(Ctx);
-	EVP_PKEY_get_raw_public_key (Pkey, keys.PublicKey, &lenpub);
-	EVP_PKEY_get_raw_private_key (Pkey, keys.PrivateKey, &lenpriv);
-	EVP_PKEY_free(Pkey);
+     	BoxKeys keys;
+     	crypto_box_keypair(keys.PublicKey,keys.PrivateKey);
 	return keys;
 }
 
@@ -176,12 +167,12 @@ int miner(void)
 
 		auto myKeys = getKeyPair();
 		puts("Public: ");
-		for(int i = 0; i < 32; ++i)
+		for(int i = 0; i < crypto_box_PUBLICKEYBYTES; ++i)
 		{
         		printf("%02x", myKeys.PublicKey[i]);// two byte 
 		}
 		puts("\nPrivate: ");
-		for(int i = 0; i < 32; ++i)
+		for(int i = 0; i < crypto_box_SECRETKEYBYTES; ++i)
 		{
         		printf("%02x", myKeys.PrivateKey[i]);// two byte 
 		}
