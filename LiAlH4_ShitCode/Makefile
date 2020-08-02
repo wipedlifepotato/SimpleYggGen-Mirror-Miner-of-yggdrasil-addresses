@@ -1,6 +1,6 @@
-libraries= -lcrypto
+libraries= -lcrypto -lpthread
 compiler = g++
-files= test.cpp
-programname=test
+files= IPv6YggDrasil.cpp
+programname=IPv6YggDrasil
 all:
 	$(compiler) $(files) $(libraries) -o $(programname)

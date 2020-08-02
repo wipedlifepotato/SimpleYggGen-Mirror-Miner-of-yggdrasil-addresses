@@ -1,6 +1,96 @@
 #include"generator.h"
-//#include<sstream>
+#include<fstream>
 #include<vector>
+#include<regex>
+#include<getopt.h>
+#include<thread>
+
+static bool found=false;
+
+static struct{
+    	uint8_t pk[KEYSIZE];
+    	uint8_t sk[KEYSIZE];
+	std::string ip;
+}dataKey;
+
+static struct{
+        bool reg=false;
+        int threads=-1;
+        std::string outputpath="";
+        std::regex regex;
+
+}options;
+
+
+static inline bool NotThat(const char * what, const std::regex & reg){
+	return std::regex_match(what,reg) == 1 ? false : true;
+}
+
+static inline bool NotThat(const char * a, const char *b)
+{
+	while(*b)
+		if(*a++!=*b++)
+			return true;
+	return false;
+}
+
+
+
+void usage(void){
+	const constexpr char * help="IPv6YggDrasil [text-pattern|regex-pattern] [options]\n"
+	"-h --help, help menu\n"
+	"-r --reg,  regexp instead just text pattern (e.g. '(one|two).*')\n"
+	"--threads -t, (default count of system)\n"
+	"-o --output output file (default keys.txt)\n"
+	"--usage this menu\n"
+	//"--prefix -p\n"
+	"";
+	puts(help);
+}
+
+void parsing(int argc, char ** args){
+	int option_index;
+	static struct option long_options[]={
+		{"help",no_argument,0,'h'},
+		{"reg", no_argument,0,'r'},
+		{"threads", required_argument, 0, 't'},
+		{"output", required_argument,0,'o'},
+		{"usage", no_argument,0,0},
+		{0,0,0,0}
+	};
+
+	int c;
+	while( (c=getopt_long(argc,args, "hrt:s:o:", long_options, &option_index))!=-1){
+		switch(c){
+			case 0:
+				if ( std::string(long_options[option_index].name) == std::string("usage") ){
+					usage();
+					exit(1);
+				}
+			case 'h':
+				usage();
+				exit(0);
+				break;
+			case 'r':
+				options.reg=true;
+				break;
+			case 't':
+				options.threads=atoi(optarg);
+				break;
+			case 'o':
+				options.outputpath=optarg;
+				break;
+			case '?':
+				std::cerr << "Undefined argument" << std::endl;
+			default:
+				std::cerr << args[0] << " --usage / --help" << std::endl;
+				exit(1);
+				break;
+		}
+	}
+}
+
+
 BoxKeys getKeyPair(void){
      	BoxKeys keys;
 	size_t lenpub = KEYSIZE;
@@ -86,7 +176,7 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 					}
 				}
 		}
-		std::cout << "I:" << z << std::endl;
+		//std::cout << "I:" << z << std::endl;
 		struct in6_addr tmpAdr;
 /*
 tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 65535
@@ -128,9 +218,9 @@ I:63
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
 		return addr;
 }	
-int miner(void)
+static inline void miner(const char * prefix)
 {
-	for(;;)
+	while(!found)
 	{
 
 	// x25519 -----------------------
@@ -163,11 +253,62 @@ int miner(void)
 
 		auto ipv6=convertSHA512ToIPv6(hash, myKeys);
 		printf("%s\n", ipv6);
+		if(	( options.reg ? !NotThat(ipv6, options.regex) : !NotThat(ipv6,prefix) ) )
+		{
+			found=true;
+			std::cout <<"Address founded: " << ipv6 << std::endl;
+			memcpy(dataKey.sk, myKeys.PrivateKey, sizeof(myKeys.PrivateKey));
+			memcpy(dataKey.pk, myKeys.PublicKey, sizeof(myKeys.PublicKey));
+			dataKey.ip =std::string(ipv6);
+		}
 		free(ipv6);
 		puts("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
 	}
 }
 
-int main(void){
-	miner();
+int main(int argc, char**argv){
+	if ( argc < 2 )
+	{
+		usage();
+		return 0;
+	}
+	parsing( argc > 2 ? argc-1 : argc, argc > 2 ? argv+1 : argv);
+
+	if(options.reg) options.regex=std::regex(argv[1]);
+	if ( options.threads < 0 ) options.threads=1;
+	std::vector<std::thread> threads(options.threads);
+	std::cout << "threads " <<  "" << std::endl;
+	for ( unsigned int j = options.threads;j--;)
+	{
+		std::cout << "thread " << j << "start" << std::endl;
+		threads[j] = std::thread(static_cast<void(*)(const char*)>(miner), argv[1]);
+		std::cout << "thread " << j << "started" << std::endl;
+	}//for
+	for(unsigned int j = 0; j < (unsigned int)options.threads;j++)
+		threads[j].join();
+	if(options.outputpath.size() == 0) options.outputpath="keys.txt";
+	std::ofstream f (options.outputpath, std::ofstream::binary | std::ofstream::out);
+	if (f)
+	{
+		f << "Your keys: " << std::endl;
+		f << "Secret key: ";
+		for(int i = 0; i < KEYSIZE; ++i)
+		{
+		 f << std::setw(2) << std::setfill('0') << std::hex << (int)dataKey.sk[i];
+		}
+		f << std::endl;
+
+		f << "Public Key: ";
+		for(int i = 0; i < 32; ++i)
+		{
+		 f << std::setw(2) << std::setfill('0') << std::hex << (int)dataKey.pk[i];
+		}
+
+		f << std::endl;
+		f << "IPv6: " <<dataKey.ip << std::endl;
+	}
+	else
+		std::cout << "Can't create file " << options.outputpath << std::endl;	
+
 }
