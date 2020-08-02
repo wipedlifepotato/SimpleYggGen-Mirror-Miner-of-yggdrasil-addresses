@@ -1,5 +1,6 @@
 #include"generator.h"
 //#include<sstream>
+#include<vector>
 BoxKeys getKeyPair(void){
      	BoxKeys keys;
 	size_t lenpub = KEYSIZE;
@@ -20,110 +21,111 @@ BoxKeys getKeyPair(void){
  	//crypto_box_keypair(keys.PublicKey,keys.PrivateKey);
 	return keys;
 }
-/*
-// GetNodeID returns the NodeID associated with a BoxPubKey.
-func GetNodeID(pub *BoxPubKey) *NodeID {
-	h := sha512.Sum512(pub[:])
-	return (*NodeID)(&h)
-}
-*/
-
-int getOnes(unsigned char HashValue[SHA512_DIGEST_LENGTH]){
-		int bitcount = 0, bit =0; 
-		std::bitset<8> bits_header(HashValue[0]);		// получаем биты первого байта хэша
-		std::string s_first4bytes = bits_header.to_string(); 		// сохраняем их в стринг
-		for(int y = 1; y < 4; ++y)						// добавляем еще 3 байта
-		{
-			std::bitset<8> bits_header_temp(HashValue[y]);
-			s_first4bytes += bits_header_temp.to_string();
-		}
-
-		bit = 0;
-
-		while(s_first4bytes[bit] != '0' && s_first4bytes[bit] == '1' ) // цикл по-битового анализа
-		{
-		++bit;
-			if(bit > bitcount) // сохраняем связку лучших ключей
-			{
-				bitcount = bit;
-				// outout -------------------------------
-				if(s_first4bytes[bit] == '0')
-				{
-					return bitcount;
-				}//if
-			}
-		}//while
-		return bitcount;
-}//endfunc
 void getSHA512(void* data, unsigned char * hash){
 		SHA512_CTX sha512;
 		SHA512_Init(&sha512);
 		SHA512_Update(&sha512, data, KEYSIZE);
 		SHA512_Final(hash, &sha512);
 }
-
-/*
-func newBoxKey() keySet {
-	pub, priv := crypto.NewBoxKeys()
-	id := crypto.GetNodeID(pub)
-	ip := net.IP(address.AddrForNodeID(id)[:]).String()
-	return keySet{priv[:], pub[:], id[:], ip}
-}
-*/
 void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH], char outputBuffer[128]){
     for(int i = 0; i < SHA512_DIGEST_LENGTH; i++)
     {
         sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
     }
 }
+
+/*
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Public: 
+#2e66d506ecf9cbac867dc6e80b59af9806245e779ef4a4da1f47398aeab5a210
+#Private: 
+#087b03e87d2ccc3f0862df887a2400240d47cd76a2726c7b9956a8bb9c7afc70
+#SHA512:
+#b0aa25d73b4aa8e55cd45f481d6b75655936431de5d9304154ee9e01b16ead0cd232f9e3a4db6a02c917a9efda884ee4923f920ffddde9d81548978e4e53e95f
+#IPv6:
+#I:63
+#201:975c:ed2a:a395:7351:7d20:75ad:d595
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 65535
+#        inet6 201:c2a8:975c:ed2a:a395:7351:7d20:75ad  prefixlen 7  scopeid 0x0<global>
+#        inet6 fe80::8646:6a8c:399a:61b8  prefixlen 64  scopeid 0x20<link>
+#        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+#        RX packets 0  bytes 0 (0.0 B)
+#        RX errors 0  dropped 0  overruns 0  frame 0
+#        TX packets 4  bytes 304 (304.0 B)
+#        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+*/
 char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myKeys){
 		//char hash[128];
 		//convertSHA512ToSum(h, hash);
-
-		char byte;
+		unsigned char byte;
 		bool done;
-
+		unsigned char lOnes=0;
 		unsigned char nBits=0;
-		char temp[8*SHA512_DIGEST_LENGTH];
-		int i=0;
+		unsigned char temp[SHA512_DIGEST_LENGTH];
+		memset(temp, 0, sizeof(temp));
+		int z=0;
+		std::vector<std::bitset<8>> bytes;
+		for( auto i =0; i < SHA512_DIGEST_LENGTH; i++) bytes.push_back(hash[i]);
 
-		// 2 / 4 / 8 -> приближенные значения
-		for (auto idx = 0; idx < 8*SHA512_DIGEST_LENGTH; idx++) {
-			char bit = (hash[idx/8] & (0x80 >> (unsigned char)(idx%8))) >> (unsigned char)(7-(idx%8));
-			if (!done && bit != 0) 
-				continue;
-			if (!done && bit == 0) {
-				done = true;
-				continue; // FIXME? this assumes that ones <= 127, probably only worth changing by using a variable length uint64, but that would require changes to the addressing scheme, and I'm not sure ones > 127 is realistic
-			}
-			byte = (byte << 1) | bit;
-			nBits++;
-			if (nBits == 8) {
-				nBits = 0;
-				temp[i++]=(byte);
-			}
+		for( auto bits : bytes ){
+				for(int i =7; i>=0;i--){
+					if(bits[i]==1 && !done) {
+						lOnes++;
+						continue;
+					}if(!done && bits[i] == 0){
+						done = true;
+						continue;
+					}
+					byte = (byte << 1) | (bits[i] >0? 1 : 0);
+					nBits++;
+					if(nBits>=8){
+						nBits = 0;
+						temp[z++]=byte;
+						//std::cout << "val:" << int(temp[i-1]) << std::endl;
+					}
+				}
 		}
-
-		
-		//std::cout << "I:" << i << std::endl;
+		std::cout << "I:" << z << std::endl;
 		struct in6_addr tmpAdr;
 /*
-	prefix := GetPrefix()
-	copy(addr[:], prefix[:])
-	addr[len(prefix)] = ones
-	copy(addr[len(prefix)+1:], temp)
+tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 65535
+        inet6 207:f61:d4d3:f5ae:7dc9:73e0:b02f:ae48  prefixlen 7  scopeid 0x0<global>
+        inet6 fe80::63c8:71c2:c9db:f446  prefixlen 64  scopeid 0x20<link>
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 4  bytes 304 (304.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Public: 
+856fe97b3c367ce5db48ae3611f8ed6841850f15f65129d4482fafc4f741e00e
+Private: 
+a865d8a331f533993b9f7ddf635870c362d9673c4bdeac7cc0c3e5f6fcbc8b7b
+SHA512:
+fe0f61d4d3f5ae7dc973e0b02fae48b824bf2453f11f6c3bb4e93368be470756ea630bbed78dccaec81dee9603a29df7dd23c19cb5fac2748dba8b96e9d32c16
+IPv6:
+I:63
+207:f61:d4d3:f5ae:7dc9:73e0:b02f:ae48
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 */
 		tmpAdr.s6_addr[0] = 0x02;
-		tmpAdr.s6_addr[1] = getOnes(hash);
-		//sizeof(temp) можно поменять просто на 16
-		for(int i =2; i < sizeof(temp); i++) // Тут на самом деле 16 байтов, и это очень не хорошо
-			tmpAdr.s6_addr[i]=temp[i];
+		tmpAdr.s6_addr[1] = lOnes;
+
+		for(int i =2; i < 16; i++) 
+			tmpAdr.s6_addr[i]=temp[i-2];
+	/*	std::cout << "IPv6:";
+		for(int i=0;i < 16; i++){
+			std::cout << int(tmpAdr.s6_addr[i]) << "," << std::endl;
+		}
+		std::cout << std::endl;
+		std::cout << "temp:";
+		for(int i=0;i < 16; i++){
+			std::cout << int(temp[i]) << "," << std::endl;
+		}*/
 		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
-		for (int i = 7; i >= 4; i--)
-			addr[i]='?';
-		for(int i = strlen(addr); i>=(strlen(addr)-4);i--) //38 
-			addr[i]='?';
 		return addr;
 }	
 int miner(void)
