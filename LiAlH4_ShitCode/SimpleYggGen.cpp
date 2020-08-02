@@ -1,3 +1,11 @@
+/*
+ * Спасибо PurpleI2P Project за активное содействие в написании этого кода.
+ * notabug.org/acetone/SimpleYggGen-CPP
+ *
+ * acetone (c) GPLv3
+ *
+ */
+
 #include"generator.h"
 #include<fstream>
 #include<vector>
@@ -5,7 +13,6 @@
 #include<getopt.h>
 #include<thread>
 #include<sstream>
-
 
 //////////////////////////////////////////////////begin Заставка и прочая вода
 
