@@ -10,6 +10,8 @@
 
 #include<bitset>
 #define KEYSIZE 32
+#define NAMEPROGRAM "SimpleYggGen"
+#define COAUTHORS "lialh4, orignal, i2pd-project."
 typedef struct {
     uint8_t PublicKey[KEYSIZE];
     uint8_t PrivateKey[KEYSIZE];

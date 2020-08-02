@@ -4,6 +4,71 @@
 #include<regex>
 #include<getopt.h>
 #include<thread>
+#include<sstream>
+
+
+//////////////////////////////////////////////////begin Заставка и прочая вода
+
+const char randomtable[90] =
+{
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+  'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+  'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D',
+  'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+  'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+  'Y', 'Z', '!', '@', '(', ')', '/', '-', '#', '+',
+  '$', '%', '^', '&', '*', '`', '~', '>', '<', '?',
+  '{', '}', '[', ']', ';', ':', '_', '=', '|', '\''
+};
+
+static inline std::string getrandom(int entropy, unsigned int size_of_line)
+{
+	std::string random_value;
+	while(random_value.size() < size_of_line)
+	{
+		random_value += randomtable[(std::rand() % entropy)];
+	}
+	random_value.shrink_to_fit();
+	return random_value;
+}
+#ifdef __linux__ 
+constexpr const char* RST = "\x1B[0m";
+static inline std::string getRandomColor(){
+	auto str = std::ostringstream();
+	str << "\x1B[";
+	str<<(30+(std::rand() % 8));
+	str << "m";
+	return str.str();
+}
+#endif
+
+void intro()
+{
+	srand(time(NULL));
+	int rv = 60;
+	std::cout
+	/*<< __FILE__*/
+#ifdef __linux__
+<< getRandomColor() << std::endl 
+#else
+ << std::endl 
+#endif
+	<<"|                                      |" << getrandom(2,44)   << std::endl
+	<< "| "<<NAMEPROGRAM<<" C++ 1.0-headhunter 2020 |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "          " << getrandom(rv, 2)	<< std::endl
+	<< "|   OpenSSL inside: x25519 -> sha512   |" << getrandom(rv, 2)  << "  "          << getrandom(rv,13) << "  " << getrandom(rv, 6) << "  " << getrandom(rv, 5)  << "  "         << getrandom(rv, 10)	<< std::endl
+	<< "| notabug.org/acetone/SimpleYggGen-CPP |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 3)	<< "     " << getrandom(rv, 2) << std::endl
+	<< "|           acetone (c) GPLv3          |" << getrandom(rv, 10) <<         "  "  << getrandom(rv,13) <<         "  "                     << getrandom(rv, 5)  << "  "         << getrandom(rv, 6)	<<    "  " << getrandom(rv, 2) << std::endl
+	<< "|                                      |" << getrandom(rv, 2)  << "          "  << getrandom(rv, 5) << "          "                     << getrandom(rv, 5)  << "          " << getrandom(rv, 2)	<< std::endl
+	<< "|     "  << __DATE__ << "         "  << __TIME__ << "     |"	    << getrandom(2,44) <<
+std::endl<<"Co-authors: "<< COAUTHORS<< std::endl
+#ifdef __linux__
+<< RST << std::endl ;
+#else
+ << std::endl ;
+#endif
+}
+//end
 
 static bool found=false;
 
@@ -159,6 +224,7 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 		tmpAdr.s6_addr[1] = lOnes;
 		for(int i =2; i < 16; i++) 
 			tmpAdr.s6_addr[i]=temp[i-2];
+		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
 		return addr;
 }	
@@ -211,6 +277,7 @@ static inline void miner(const char * prefix)
 	}
 }
 int main(int argc, char**argv){
+	intro();
 	if ( argc < 2 )
 	{
 		usage();

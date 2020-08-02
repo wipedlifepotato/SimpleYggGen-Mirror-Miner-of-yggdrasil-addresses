@@ -1,6 +1,6 @@
 libraries= -lcrypto -lpthread
 compiler = g++
-files= IPv6YggDrasil.cpp
-programname=IPv6YggDrasil
+files= *.cpp
+programname=SimpleYggGen
 all:
 	$(compiler) $(files) $(libraries) -o $(programname)
