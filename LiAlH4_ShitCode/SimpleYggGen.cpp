@@ -6,7 +6,7 @@
  *
  */
 
-#include"generator.h"
+#include"SimpleYggGen.hpp"
 #include<fstream>
 #include<vector>
 #include<regex>
