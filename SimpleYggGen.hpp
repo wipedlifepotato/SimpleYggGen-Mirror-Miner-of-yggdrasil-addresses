@@ -1,12 +1,19 @@
 #include<openssl/sha.h>
+#include<openssl/evp.h>
+#include<openssl/bn.h>
 #include<string.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
-#include <sys/types.h> 
+#include<sys/types.h> 
 #include<iostream>
 #include<iomanip>
-#include<openssl/evp.h>
-#include<openssl/bn.h>
+#include<fstream>
+#include<vector>
+#include<regex>
+#include<getopt.h>
+#include<thread>
+#include<sstream>
+#include<random>
 
 #include<bitset>
 #define KEYSIZE 32

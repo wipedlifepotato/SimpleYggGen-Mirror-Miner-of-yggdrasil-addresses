@@ -7,13 +7,7 @@
  */
 
 #include"SimpleYggGen.hpp"
-#include<fstream>
-#include<vector>
-#include<regex>
-#include<getopt.h>
-#include<thread>
-#include<sstream>
-#include<random>
+
 //////////////////////////////////////////////////begin Заставка и прочая вода
 
 const char randomtable[90] =
@@ -273,7 +267,7 @@ static inline void miner(const char * prefix)
 		if(	( options.reg ? !NotThat(ipv6, options.regex) : !NotThat(ipv6,prefix) ) )
 		{
 			found=true;
-			std::cout <<"Address founded: " << ipv6 << std::endl;
+			std::cout <<"Address found: " << ipv6 << std::endl;
 			memcpy(dataKey.sk, myKeys.PrivateKey, sizeof(myKeys.PrivateKey));
 			memcpy(dataKey.pk, myKeys.PublicKey, sizeof(myKeys.PublicKey));
 			dataKey.ip =std::string(ipv6);

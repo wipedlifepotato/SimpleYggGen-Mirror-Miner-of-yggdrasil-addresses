@@ -1,0 +1,38 @@
+branches:
+  only:
+    - master
+environment:
+  matrix:
+  # MSVC x86
+  #- name: win32
+  #  platform: amd64_x86
+  #  suffix: msvc2015
+
+  # MSVC x64
+  #  - name: win64
+  #  platform: amd64
+  #  suffix: msvc2015
+
+  # MinGW
+  - name: win32
+    platform: mingw
+    suffix: mingw
+
+init:
+   - if %platform%==mingw set PATH=C:\MinGW\bin;%PATH%
+install:
+   - set PATH=C:\MinGW\msys\1.0\bin;%PATH%
+   - set PATH=C:\OpenSSL-Win32;%PATH%
+build_script:
+  - dir C:\OpenSSL-Win32\include
+ # - make
+  - g++ SimpleYggGen.cpp -std=gnu++11 -lcrypto -lpthread -o SimpleYggGen.exe -IC:\OpenSSL-Win32\include
+after_build:
+  - cmd: echo 'test'
+
+artifacts:
+  - path: Output\*.exe
+  - path: release
+    type: zip
+
+
