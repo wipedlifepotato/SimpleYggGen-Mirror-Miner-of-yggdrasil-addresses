@@ -2,9 +2,14 @@
 #include<openssl/evp.h>
 #include<openssl/bn.h>
 #include<string.h>
-#include<arpa/inet.h>
-#include<sys/socket.h>
-#include<sys/types.h> 
+#ifdef __linux__
+	#include<arpa/inet.h>
+	#include<sys/socket.h>
+	#include<sys/types.h> 
+#else
+	#include <Winsock2.h>
+#endif
+
 #include<iostream>
 #include<iomanip>
 #include<fstream>
