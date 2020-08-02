@@ -1,6 +1,7 @@
 libraries= -lcrypto -lpthread
 compiler = g++
-files= *.cpp
+files= SimpleYggGen.cpp
 programname=SimpleYggGen
+CXFLAG=-std=gnu++11
 all:
-	$(compiler) $(files) $(libraries) -o $(programname)
+	$(compiler) $(files) $(CXFLAG) $(libraries) -o $(programname)

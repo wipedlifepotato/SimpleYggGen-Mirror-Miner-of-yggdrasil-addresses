@@ -13,7 +13,7 @@
 #include<getopt.h>
 #include<thread>
 #include<sstream>
-
+#include<random>
 //////////////////////////////////////////////////begin Заставка и прочая вода
 
 const char randomtable[90] =
