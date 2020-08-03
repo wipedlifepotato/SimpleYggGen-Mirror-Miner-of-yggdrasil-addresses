@@ -305,7 +305,7 @@ static inline void miner(const char *prefix) {
 		sleep(30); //magic number
   }
   auto clearconsole = [](int defsleep = 1) {
-    std::cout << "\033c";
+    system("clear||cls");
     intro();
     std::cout << getRandomColor();
     std::cout << "\b\b\b..." << std::flush;
