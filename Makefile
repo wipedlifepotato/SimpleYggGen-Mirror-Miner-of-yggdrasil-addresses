@@ -1,7 +1,12 @@
 libraries= -lcrypto -lpthread
-compiler = g++
+cxx = g++
 files= SimpleYggGen.cpp
 programname=SimpleYggGen
 CXFLAG=-std=gnu++11
-all:
-	$(compiler) $(files) $(CXFLAG) $(libraries) -o $(programname)
+c = gcc
+GTKDIR=GTK
+all: gtk 
+	$(cxx) $(files) $(CXFLAG) $(libraries) -o $(programname)
+	cp $(GTKDIR)/interface $(GTKDIR)/*.glade .
+gtk:
+	cd $(GTKDIR) && make 
