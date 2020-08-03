@@ -6,7 +6,7 @@ matrix:
     before_install:
     - sudo apt-get update -qq
     - sudo apt-get install devscripts build-essential lintian dh-make
-    - sudo apt-get install libssl-dev autoconf
+    - sudo apt-get install libssl-dev autoconf libgtk-3-dev libncurses-dev 
     compiler:
     - gcc
     - clang
