@@ -148,11 +148,11 @@ void parsing(int argc, char ** args){
 				break;
 			case 'H':
 				options.mode=ProgramMode::high;
-				if(options.outputpath.size() == 0) options.outputpath=defaultHighSearchFileName;
+				options.outputpath=defaultHighSearchFileName;
 				break;
 			case 's':
 				options.mode=ProgramMode::search;
-				if(options.outputpath.size() == 0) options.outputpath=defaultSearchFileName;
+				options.outputpath=defaultSearchFileName;
 				break;
 			case 'h':
 				usage();
