@@ -33,10 +33,18 @@ static inline std::string getrandom(int entropy, unsigned int size_of_line) {
 #ifdef __linux__
 constexpr const char *RST = "\x1B[0m";
 static inline std::string getRandomColor() {
+  #ifndef __linux__
+	     return "";
+  #endif
+ // unsigned short Background_color = (std::rand() % 4 + 41);//41 -> red
+  unsigned short Foreground_color = (std::rand() % 3 + 32);//30-> black 37-> white; 31 = red
+  //if(Background_color - 10 == Foreground_color) Background_color=4;
   auto str = std::ostringstream();
-  str << "\x1B[";
-  str << (30 + (std::rand() % 8));
-  str << "m";
+
+  str<<"\033[1;4;46;";// bold, underline, cyan background
+  str << Foreground_color << "m";
+
+
   return str.str();
 }
 #endif
@@ -45,12 +53,7 @@ void intro() {
   srand(time(NULL));
   int rv = 60;
   std::cout
-  /*<< __FILE__*/
-#ifdef __linux__
       << getRandomColor() << std::endl
-#else
-      << std::endl
-#endif
       << "|                                      |" << getrandom(2, 44)
       << std::endl
       << "| " << NAMEPROGRAM << " C++ 1.0-headhunter 2020 |" << getrandom(rv, 2)
@@ -290,12 +293,12 @@ static inline void addKeyPair(BoxKeys data, std::string ipv6) {
 }
 
 static inline void miner(const char *prefix) {
-  if ( options.reg && prefix[0] != '^'){
+  if ( options.reg && prefix[0] != '^' && options.mode != ProgramMode::high){
 		std::cerr
 		 << "WARNING: " 
 		 << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"<< std::endl;
 		 sleep(15); // magic number
-  }else if(prefix[0] != '2'){
+  }else if(prefix[0] != '2' && options.mode != ProgramMode::high){
 		std::cerr << "WARNING: "
 		<< "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE YOU OKEY?!"
 		<< std::endl;
@@ -303,6 +306,7 @@ static inline void miner(const char *prefix) {
   }
   auto clearconsole = [](int defsleep = 1) {
     std::cout << "\033c";
+    intro();
     std::cout << getRandomColor();
     std::cout << "\b\b\b..." << std::flush;
     usleep(defsleep);
@@ -354,7 +358,7 @@ int main(int argc, char **argv) {
     return 0;
   }
   options.outputpath = defaultSearchFileName;
-  parsing(argc, argv); // FIXME
+  parsing(argc, argv);
 
   if (options.reg)
     options.regex = std::regex(argv[1]);
