@@ -290,6 +290,17 @@ static inline void addKeyPair(BoxKeys data, std::string ipv6) {
 }
 
 static inline void miner(const char *prefix) {
+  if ( options.reg && prefix[0] != '^'){
+		std::cerr
+		 << "WARNING: " 
+		 << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"<< std::endl;
+		 sleep(15); // magic number
+  }else if(prefix[0] != '2'){
+		std::cerr << "WARNING: "
+		<< "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE YOU OKEY?!"
+		<< std::endl;
+		sleep(30); //magic number
+  }
   auto clearconsole = [](int defsleep = 1) {
     std::cout << "\033c";
     std::cout << getRandomColor();
