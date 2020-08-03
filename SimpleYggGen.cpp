@@ -7,6 +7,10 @@
  */
 
 #include"SimpleYggGen.hpp"
+#include<mutex>
+#include<unistd.h>
+
+static unsigned long long foundAddreses=0;
 
 //////////////////////////////////////////////////begin Заставка и прочая вода
 
@@ -71,20 +75,18 @@ std::endl<<"Co-authors: "<< COAUTHORS<< std::endl
 }
 //end
 
-static bool found=false;
+static unsigned int maxlones=0;
 
-static struct{
-    	uint8_t pk[KEYSIZE];
-    	uint8_t sk[KEYSIZE];
-	std::string ip;
-}dataKey;
+static dataKey pDatakey;
+
 
 static struct{
         bool reg=false;
         int threads=-1;
         std::string outputpath="";
         std::regex regex;
-
+	ProgramMode mode=ProgramMode::search;
+	unsigned long long limit=-1;
 }options;
 
 
@@ -103,12 +105,15 @@ static inline bool NotThat(const char * a, const char *b)
 
 
 void usage(void){
-	const constexpr char * help="IPv6YggDrasil [text-pattern|regex-pattern] [options]\n"
+	const constexpr char * help=NAMEPROGRAM" [text-pattern|regex-pattern] [options]\n"
 	"-h --help, help menu\n"
 	"-r --reg,  regexp instead just text pattern (e.g. '(one|two).*')\n"
 	"--threads -t, (default count of system)\n"
 	"-o --output output file (default keys.txt)\n"
 	"--usage this menu\n"
+	"--highhead mode of high head...\n"
+        "--searchadress (default) mode\n"
+	"--limitfound=n limit found\n"
 	//"--prefix -p\n"
 	"";
 	puts(help);
@@ -116,16 +121,21 @@ void usage(void){
 
 void parsing(int argc, char ** args){
 	int option_index;
+
 	static struct option long_options[]={
 		{"help",no_argument,0,'h'},
 		{"reg", no_argument,0,'r'},
 		{"threads", required_argument, 0, 't'},
 		{"output", required_argument,0,'o'},
 		{"usage", no_argument,0,0},
+		{"highhead", no_argument,0,'z'},
+		{"searchadress", no_argument,0,'s'},
+		{"limitfound", required_argument, 0, 'l'},
 		{0,0,0,0}
 	};
 
 	int c;
+
 	while( (c=getopt_long(argc,args, "hrt:s:o:", long_options, &option_index))!=-1){
 		switch(c){
 			case 0:
@@ -133,6 +143,17 @@ void parsing(int argc, char ** args){
 					usage();
 					exit(1);
 				}
+			case 'l':
+				options.limit=atoi(optarg);
+				break;
+			case 'z':
+				options.mode=ProgramMode::high;
+				if(options.outputpath.size() == 0) options.outputpath=defaultHighSearchFileName;
+				break;
+			case 's':
+				options.mode=ProgramMode::search;
+				if(options.outputpath.size() == 0) options.outputpath=defaultSearchFileName;
+				break;
 			case 'h':
 				usage();
 				exit(0);
@@ -189,7 +210,7 @@ void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH], char outputBuf
         sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
     }
 }
-char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myKeys){
+char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myKeys, int & cOnes){
 		//char hash[128];
 		//convertSHA512ToSum(h, hash);
 		unsigned char byte;
@@ -227,54 +248,99 @@ char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myK
 			tmpAdr.s6_addr[i]=temp[i-2];
 		char * addr = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char));
 		inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
+		cOnes=lOnes;
 		return addr;
 }	
+char * convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], BoxKeys myKeys){
+	int o;
+	return convertSHA512ToIPv6(hash, myKeys, o);
+}
+
+std::mutex m_writeMutex;
+static inline void addKeyPair(BoxKeys data, std::string ipv6){
+	std::lock_guard<std::mutex> guard(m_writeMutex);
+	std::ofstream f (options.outputpath, std::ofstream::out | std::ofstream::app);
+	if (f)
+	{
+		f << "~" << std::endl;
+		f << (options.mode == ProgramMode::high ? "HighMode" : "SearchMode" ) << std::endl;
+		f << "Your keys: " << std::endl;
+		f << "Secret key: ";
+		for(int i = 0; i < KEYSIZE; ++i)
+		{
+		 f << std::setw(2) << std::setfill('0') << std::hex << (int)data.PrivateKey[i];
+		}
+		f << std::endl;
+
+		f << "Public Key: ";
+		for(int i = 0; i < 32; ++i)
+		{
+		 f << std::setw(2) << std::setfill('0') << std::hex << (int)data.PublicKey[i];
+		}
+
+		f << std::endl;
+		f << "IPv6: " <<ipv6 << std::endl;
+		f << "~" << std::endl;
+	}
+	else
+		std::cout << "Can't create/reopen file " << options.outputpath << std::endl;	
+
+}
+
 static inline void miner(const char * prefix)
 {
-	while(!found)
+	auto clearconsole = [](int defsleep=1){
+		std::cout << "\033c";
+		std::cout << getRandomColor();
+		std::cout <<"\b\b\b..." << std::flush;
+	        usleep(defsleep);
+		std::cout <<"\b\b\b.U." << std::flush;
+		usleep(defsleep);
+		std::cout <<"\b\b\b..U" << std::flush;
+		usleep(defsleep);
+		std::cout <<"\b\b\bvvU" << std::flush;
+		usleep(defsleep);
+		std::cout <<"\b\b\bUvU" << std::flush;
+		std::cout <<"\b\b\b|" << std::flush;
+	};
+	while(options.limit <0 || options.limit >foundAddreses )
 	{
-
-	// x25519 -----------------------
-
-
+		std::cout <<"\b/" << std::flush;
+		std::cout <<"\b\\" << std::flush;
 		auto myKeys = getKeyPair();
-		puts("Public: ");
-		for(int i = 0; i < KEYSIZE; ++i)
-		{
-        		printf("%02x", myKeys.PublicKey[i]);// two byte 
-		}
-		puts("\nPrivate: ");
-		for(int i = 0; i < KEYSIZE; ++i)
-		{
-        		printf("%02x", myKeys.PrivateKey[i]);// two byte 
-		}
-		puts("");
-
-// sha512 --------------------------------
-		puts("SHA512:");
 		unsigned char hash[SHA512_DIGEST_LENGTH];
 		getSHA512(myKeys.PublicKey, hash);
-		for(int i = 0; i < SHA512_DIGEST_LENGTH; i++)
+		char* ipv6=convertSHA512ToIPv6(hash, myKeys);
+		if( options.mode==ProgramMode::high )
 		{
-        		printf("%02x", hash[i]);// two byte 
-		}
-		puts("");
-		puts("IPv6:");
-		
-
-		auto ipv6=convertSHA512ToIPv6(hash, myKeys);
-		printf("%s\n", ipv6);
-		if(	( options.reg ? !NotThat(ipv6, options.regex) : !NotThat(ipv6,prefix) ) )
-		{
-			found=true;
-			std::cout <<"Address found: " << ipv6 << std::endl;
-			memcpy(dataKey.sk, myKeys.PrivateKey, sizeof(myKeys.PrivateKey));
-			memcpy(dataKey.pk, myKeys.PublicKey, sizeof(myKeys.PublicKey));
-			dataKey.ip =std::string(ipv6);
+			int ones;
+			ipv6=convertSHA512ToIPv6(hash,myKeys, ones);
+			if(ones > maxlones){
+				 clearconsole();
+				 maxlones=ones;
+				 std::cout << "Found new max high-addr: " <<
+				 "(" << maxlones <<") " << ipv6 << std::endl;
+				 addKeyPair(myKeys, ipv6);
+			}
+		}else{ 
+			ipv6=convertSHA512ToIPv6(hash,myKeys);
+			if(	( options.reg ? !NotThat(ipv6, options.regex) : !NotThat(ipv6,prefix) ) )
+			{
+				/*std::ostringstream tmp;
+				tmp <<"Address found: " <<
+				 "(" << foundAddreses<<") "<<
+				  ipv6 ;*/
+				//for(auto i = tmp.str().length();i--;)std::cout<<"\b"<<std::flush;
+				//std::cout << std::flush ;
+				clearconsole();
+				std::cout <<"Address found: " << "(" << ++foundAddreses<<") "<<
+				  ipv6;
+				std::cout << std::flush ;
+				addKeyPair(myKeys, ipv6);
+				//delete newKey.sk; // not need. not-heap..
+			}
 		}
 		free(ipv6);
-		puts("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
 	}
 }
 int main(int argc, char**argv){
@@ -284,41 +350,20 @@ int main(int argc, char**argv){
 		usage();
 		return 0;
 	}
-	parsing( argc > 2 ? argc-1 : argc, argc > 2 ? argv+1 : argv);
+	options.outputpath=defaultSearchFileName;
+	parsing( argc > 2 ? argc-1 : argc, argc > 2 ? argv+1 : argv); //FIXME
+
 
 	if(options.reg) options.regex=std::regex(argv[1]);
-	if ( options.threads < 0 ) options.threads=1;
+	if ( options.threads < 0 ) options.threads=std::thread::hardware_concurrency();;
 	std::vector<std::thread> threads(options.threads);
-	std::cout << "threads " <<  "" << std::endl;
+
 	for ( unsigned int j = options.threads;j--;)
 	{
-		std::cout << "thread " << j << "start" << std::endl;
+		//std::cout << "thread " << j << " start" << std::endl;
 		threads[j] = std::thread(static_cast<void(*)(const char*)>(miner), argv[1]);
-		std::cout << "thread " << j << "started" << std::endl;
+		//std::cout << "thread " << j << " started" << std::endl;
 	}//for
 	for(unsigned int j = 0; j < (unsigned int)options.threads;j++)
 		threads[j].join();
-	if(options.outputpath.size() == 0) options.outputpath="keys.txt";
-	std::ofstream f (options.outputpath, std::ofstream::binary | std::ofstream::out);
-	if (f)
-	{
-		f << "Your keys: " << std::endl;
-		f << "Secret key: ";
-		for(int i = 0; i < KEYSIZE; ++i)
-		{
-		 f << std::setw(2) << std::setfill('0') << std::hex << (int)dataKey.sk[i];
-		}
-		f << std::endl;
-
-		f << "Public Key: ";
-		for(int i = 0; i < 32; ++i)
-		{
-		 f << std::setw(2) << std::setfill('0') << std::hex << (int)dataKey.pk[i];
-		}
-
-		f << std::endl;
-		f << "IPv6: " <<dataKey.ip << std::endl;
-	}
-	else
-		std::cout << "Can't create file " << options.outputpath << std::endl;	
 }

@@ -24,12 +24,24 @@
 #define KEYSIZE 32
 #define NAMEPROGRAM "SimpleYggGen"
 #define COAUTHORS "lialh4, orignal, i2pd-project."
+
+constexpr auto defaultHighSearchFileName="syg-highsearch.txt";
+constexpr auto defaultSearchFileName="syg-search.txt";//(reg)
+
 typedef struct {
     uint8_t PublicKey[KEYSIZE];
     uint8_t PrivateKey[KEYSIZE];
     // unsigned char PublicKey[crypto_box_PUBLICKEYBYTES];
     // unsigned char PrivateKey[crypto_box_SECRETKEYBYTES];
 }BoxKeys;
+enum class ProgramMode 
+{ 	high, search	 }; 
+struct dataKey{
+    	uint8_t pk[KEYSIZE];
+    	uint8_t sk[KEYSIZE];
+	std::string ip;
+};
+
 BoxKeys getKeyPair(void);
 void getSHA512(void* data, unsigned char * hash);
 void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH], char outputBuffer[128]);
