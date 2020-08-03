@@ -111,9 +111,9 @@ void usage(void){
 	"--threads -t, (default count of system)\n"
 	"-o --output output file (default keys.txt)\n"
 	"--usage this menu\n"
-	"--highhead mode of high head...\n"
-        "--searchadress (default) mode\n"
-	"--limitfound=n limit found\n"
+	"--highhead -H mode of high head...\n"
+        "--searchadress -s (default) mode\n"
+	"--limitfound=n -lN limit found\n"
 	//"--prefix -p\n"
 	"";
 	puts(help);
@@ -128,7 +128,7 @@ void parsing(int argc, char ** args){
 		{"threads", required_argument, 0, 't'},
 		{"output", required_argument,0,'o'},
 		{"usage", no_argument,0,0},
-		{"highhead", no_argument,0,'z'},
+		{"highhead", no_argument,0,'H'},
 		{"searchadress", no_argument,0,'s'},
 		{"limitfound", required_argument, 0, 'l'},
 		{0,0,0,0}
@@ -136,7 +136,7 @@ void parsing(int argc, char ** args){
 
 	int c;
 
-	while( (c=getopt_long(argc,args, "hrt:s:o:", long_options, &option_index))!=-1){
+	while( (c=getopt_long(argc,args, "hrt:s:o:Hsl:", long_options, &option_index))!=-1){
 		switch(c){
 			case 0:
 				if ( std::string(long_options[option_index].name) == std::string("usage") ){
@@ -146,7 +146,7 @@ void parsing(int argc, char ** args){
 			case 'l':
 				options.limit=atoi(optarg);
 				break;
-			case 'z':
+			case 'H':
 				options.mode=ProgramMode::high;
 				if(options.outputpath.size() == 0) options.outputpath=defaultHighSearchFileName;
 				break;
@@ -326,12 +326,6 @@ static inline void miner(const char * prefix)
 			ipv6=convertSHA512ToIPv6(hash,myKeys);
 			if(	( options.reg ? !NotThat(ipv6, options.regex) : !NotThat(ipv6,prefix) ) )
 			{
-				/*std::ostringstream tmp;
-				tmp <<"Address found: " <<
-				 "(" << foundAddreses<<") "<<
-				  ipv6 ;*/
-				//for(auto i = tmp.str().length();i--;)std::cout<<"\b"<<std::flush;
-				//std::cout << std::flush ;
 				clearconsole();
 				std::cout <<"Address found: " << "(" << ++foundAddreses<<") "<<
 				  ipv6;
@@ -351,7 +345,7 @@ int main(int argc, char**argv){
 		return 0;
 	}
 	options.outputpath=defaultSearchFileName;
-	parsing( argc > 2 ? argc-1 : argc, argc > 2 ? argv+1 : argv); //FIXME
+	parsing( argc, argv ); //FIXME
 
 
 	if(options.reg) options.regex=std::regex(argv[1]);
