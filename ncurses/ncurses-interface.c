@@ -1,40 +1,34 @@
 #include"ncurses-interface.h"
+extern int start_field(void);
 
-static void on_highmode_selected(void){
-
-}
-
-static void on_regexpmode_selected(void){
-
-}
-
-static void on_searchbytext_selected(void){
-
-}
+OptionBox options;
 
 static void on_enter(const char * entry){
 	move(20, 0);
 	clrtoeol();
 	attron(COLOR_PAIR(2));
 
-
 	if( strstr(entry, ENTRY_EXIT) ){
 	 stopprogram=true;
 	 mvprintw(LINES - 1,0 , "BYE, BYE, BYE", entry);
 	}ELIF( strstr(entry,ENTRY_HIGHMODE) ){
-	 mvprintw(LINES - 1,0 , "Enter to highhead mode");
-	 on_highmode_selected();
+	 mvprintw(LINES - 1,0 , "Enter to highhead mode?(enter/control+C)");
+	 options.engine=HighHead;
 	}ELIF( strstr(entry,ENTRY_REGEXPMODE) ){
 	 mvprintw(LINES - 1,0 , "Enter to RegExp mode");
-	 on_regexpmode_selected();
+	 options.engine=RegExp;
+//	 on_regexpmode_selected();
 	}ELIF( strstr(entry,ENTRY_SEARCHBYTEXTMODE) ){
 	 mvprintw(LINES - 1,0 , "Enter to Search by text mode");
-         on_searchbytext_selected();
+	 options.engine=SearchByText;
 	}
 
 	//mvprintw(LINES - 1,0 , ITEMSELECTEDTEXT" %s", entry);
 	attroff(COLOR_PAIR(2));
 	refresh();
+	if( options.engine!=HighHead)
+		start_field();
+	stopprogram=true;
 }
 
 void start_menu(void)
@@ -58,7 +52,7 @@ void start_menu(void)
         my_items = (ITEM **)calloc(n_choices, sizeof(ITEM *));
         for(i = 0; i < n_choices; ++i){
                 my_items[i] = new_item(choices[i], choices[i]);
-		set_item_userptr(my_items[i], on_enter);
+		set_item_userptr(my_items[i], (void (*)(char*))on_enter);
 	}
 	/* Crate menu */
 	my_menu = new_menu((ITEM **)my_items);
@@ -117,7 +111,7 @@ void start_menu(void)
 				void (*p)(char *);
 
 				cur = current_item(my_menu);
-				p = item_userptr(cur);
+				p = item_userptr((const ITEM*)cur);
 				p((char *)item_name(cur));
 				pos_menu_cursor(my_menu);
 				break;
@@ -134,6 +128,7 @@ void start_menu(void)
 	endwin();
 }
 
-int main(void){
+OptionBox getOption(void){
 	start_menu();
+	return options;
 }

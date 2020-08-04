@@ -9,7 +9,9 @@
 #include "SimpleYggGen.hpp"
 #include <mutex>
 #include <unistd.h>
+#include "ncurses/ncurses-interface.h"
 
+//extern OptionBox getOption(void);
 static unsigned long long foundAddreses = 0;
 
 //////////////////////////////////////////////////begin Заставка и прочая вода
@@ -93,6 +95,7 @@ static struct {
   std::regex regex;
   ProgramMode mode = ProgramMode::search;
   unsigned long long limit = -1;
+  char* searchtextby=nullptr;//from ncurses if set
 } options;
 
 static inline bool NotThat(const char *what, const std::regex &reg) {
@@ -117,6 +120,7 @@ void usage(void) {
       "--highhead -H mode of high head...\n"
       "--searchadress -s (default) mode\n"
       "--limitfound=n -lN limit found\n"
+      "--ncurses -n start ncurses interface\n"
       //"--prefix -p\n"
       "";
   puts(help);
@@ -134,11 +138,12 @@ void parsing(int argc, char **args) {
       {"highhead", no_argument, 0, 'H'},
       {"searchadress", no_argument, 0, 's'},
       {"limitfound", required_argument, 0, 'l'},
+      {"ncurses", no_argument, 0, 'n'},
       {0, 0, 0, 0}};
 
   int c;
-
-  while ((c = getopt_long(argc, args, "hrt:s:o:Hsl:", long_options,
+  OptionBox ncursesoptions;
+  while ((c = getopt_long(argc, args, "hrt:s:o:Hsl:n", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
@@ -147,6 +152,22 @@ void parsing(int argc, char **args) {
         usage();
         exit(1);
       }
+     case 'n':
+     ncursesoptions=getOption();
+     switch(ncursesoptions.engine){
+	case HighHead:
+	options.mode = ProgramMode::high;
+	options.outputpath = defaultHighSearchFileName;
+	break;
+	case RegExp:
+	options.reg = true;
+	break;
+     }
+     options.searchtextby = new char[MAXBUF];
+     memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF); 
+     
+     break;
+
     case 'l':
       options.limit = atoi(optarg);
       break;
@@ -305,7 +326,11 @@ static inline void miner(const char *prefix) {
 		sleep(30); //magic number
   }
   auto clearconsole = [](int defsleep = 1) {
+#ifndef __linux__
     system("clear||cls");
+#else
+    std::cout << "\033[2J\033[1;1H";	
+#endif
     intro();
     std::cout << getRandomColor();
     std::cout << "\b\b\b..." << std::flush;
@@ -370,7 +395,8 @@ int main(int argc, char **argv) {
   for (unsigned int j = options.threads; j--;) {
     // std::cout << "thread " << j << " start" << std::endl;
     threads[j] =
-        std::thread(static_cast<void (*)(const char *)>(miner), argv[1]);
+        std::thread(static_cast<void (*)(const char *)>(miner), 
+		options.searchtextby == nullptr? argv[1]:options.searchtextby);
     // std::cout << "thread " << j << " started" << std::endl;
   } // for
   for (unsigned int j = 0; j < (unsigned int)options.threads; j++)

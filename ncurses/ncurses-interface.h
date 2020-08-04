@@ -6,13 +6,21 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define ITEMSELECTEDTEXT "Item selected is :" 
 #define ELIF else if
-#define MAXBUF 1024
+#define MAXBUF 128
 
 static const char ENTRY_HIGHMODE[]="Start HighHeadMode";
 static const char ENTRY_REGEXPMODE[]="Start RegExpMode";
 static const char ENTRY_SEARCHBYTEXTMODE[]="Start SearchByText";
 static const char  ENTRY_EXIT[]="Exit";
 
+enum Mode{
+	HighHead, SearchByText, RegExp
+};
+struct OptionBox{
+	unsigned int countOfThreads;
+	Mode engine;
+	char searchtext[MAXBUF];
+};
 
 static bool stopprogram=false;
 static const char *choices[] = {
@@ -22,7 +30,9 @@ static const char *choices[] = {
                   };
 static void on_enter(const char * entry);
 void start_menu(void);
+OptionBox getOption(void);
 
+/*
 static void on_highmode_selected(void);
 static void on_regexpmode_selected(void);
-static void on_searchbytext_selected(void);
+static void on_searchbytext_selected(void);*/
