@@ -7,11 +7,11 @@
  */
 
 #include "SimpleYggGen.hpp"
+#include "ncurses/ncurses-interface.h"
 #include <mutex>
 #include <unistd.h>
-#include "ncurses/ncurses-interface.h"
 
-//extern OptionBox getOption(void);
+// extern OptionBox getOption(void);
 static unsigned long long foundAddreses = 0;
 
 //////////////////////////////////////////////////begin Заставка и прочая вода
@@ -35,17 +35,17 @@ static inline std::string getrandom(int entropy, unsigned int size_of_line) {
 #ifdef __linux__
 constexpr const char *RST = "\x1B[0m";
 static inline std::string getRandomColor() {
-  #ifndef __linux__
-	     return "";
-  #endif
- // unsigned short Background_color = (std::rand() % 4 + 41);//41 -> red
-  unsigned short Foreground_color = (std::rand() % 3 + 32);//30-> black 37-> white; 31 = red
-  //if(Background_color - 10 == Foreground_color) Background_color=4;
+#ifndef __linux__
+  return "";
+#endif
+  // unsigned short Background_color = (std::rand() % 4 + 41);//41 -> red
+  unsigned short Foreground_color =
+      (std::rand() % 3 + 32); // 30-> black 37-> white; 31 = red
+  // if(Background_color - 10 == Foreground_color) Background_color=4;
   auto str = std::ostringstream();
 
-  str<<"\033[1;4;46;";// bold, underline, cyan background
+  str << "\033[1;4;46;"; // bold, underline, cyan background
   str << Foreground_color << "m";
-
 
   return str.str();
 }
@@ -54,32 +54,33 @@ static inline std::string getRandomColor() {
 void intro() {
   srand(time(NULL));
   int rv = 60;
-  std::cout
-      << getRandomColor() << std::endl
-      << "|                                      |" << getrandom(2, 44)
-      << std::endl
-      << "| " << NAMEPROGRAM << " C++ 1.0-headhunter 2020 |" << getrandom(rv, 2)
-      << "          " << getrandom(rv, 5) << "  " << getrandom(rv, 6) << "  "
-      << getrandom(rv, 5) << "          " << getrandom(rv, 2) << std::endl
-      << "|   OpenSSL inside: x25519 -> sha512   |" << getrandom(rv, 2) << "  "
-      << getrandom(rv, 13) << "  " << getrandom(rv, 6) << "  "
-      << getrandom(rv, 5) << "  " << getrandom(rv, 10) << std::endl
-      << "| notabug.org/acetone/SimpleYggGen-CPP |" << getrandom(rv, 2)
-      << "          " << getrandom(rv, 5) << "          " << getrandom(rv, 5)
-      << "  " << getrandom(rv, 3) << "     " << getrandom(rv, 2) << std::endl
-      << "|           acetone (c) GPLv3          |" << getrandom(rv, 10) << "  "
-      << getrandom(rv, 13) << "  " << getrandom(rv, 5) << "  "
-      << getrandom(rv, 6) << "  " << getrandom(rv, 2) << std::endl
-      << "|                                      |" << getrandom(rv, 2)
-      << "          " << getrandom(rv, 5) << "          " << getrandom(rv, 5)
-      << "          " << getrandom(rv, 2) << std::endl
-      << "|     " << __DATE__ << "         " << __TIME__ << "     |"
-      << getrandom(2, 44) << std::endl
-      << "Co-authors: " << COAUTHORS << std::endl
+  std::cout << getRandomColor() << std::endl
+            << "|                                      |" << getrandom(2, 44)
+            << std::endl
+            << "| " << NAMEPROGRAM << " C++ 1.0-headhunter 2020 |"
+            << getrandom(rv, 2) << "          " << getrandom(rv, 5) << "  "
+            << getrandom(rv, 6) << "  " << getrandom(rv, 5) << "          "
+            << getrandom(rv, 2) << std::endl
+            << "|   OpenSSL inside: x25519 -> sha512   |" << getrandom(rv, 2)
+            << "  " << getrandom(rv, 13) << "  " << getrandom(rv, 6) << "  "
+            << getrandom(rv, 5) << "  " << getrandom(rv, 10) << std::endl
+            << "| notabug.org/acetone/SimpleYggGen-CPP |" << getrandom(rv, 2)
+            << "          " << getrandom(rv, 5) << "          "
+            << getrandom(rv, 5) << "  " << getrandom(rv, 3) << "     "
+            << getrandom(rv, 2) << std::endl
+            << "|           acetone (c) GPLv3          |" << getrandom(rv, 10)
+            << "  " << getrandom(rv, 13) << "  " << getrandom(rv, 5) << "  "
+            << getrandom(rv, 6) << "  " << getrandom(rv, 2) << std::endl
+            << "|                                      |" << getrandom(rv, 2)
+            << "          " << getrandom(rv, 5) << "          "
+            << getrandom(rv, 5) << "          " << getrandom(rv, 2) << std::endl
+            << "|     " << __DATE__ << "         " << __TIME__ << "     |"
+            << getrandom(2, 44) << std::endl
+            << "Co-authors: " << COAUTHORS << std::endl
 #ifdef __linux__
-      << RST << std::endl;
+            << RST << std::endl;
 #else
-      << std::endl;
+            << std::endl;
 #endif
 }
 // end
@@ -95,7 +96,7 @@ static struct {
   std::regex regex;
   ProgramMode mode = ProgramMode::search;
   unsigned long long limit = -1;
-  char* searchtextby=nullptr;//from ncurses if set
+  char *searchtextby = nullptr; // from ncurses if set
 } options;
 
 static inline bool NotThat(const char *what, const std::regex &reg) {
@@ -152,21 +153,21 @@ void parsing(int argc, char **args) {
         usage();
         exit(1);
       }
-     case 'n':
-     ncursesoptions=getOption();
-     switch(ncursesoptions.engine){
-	case HighHead:
-	options.mode = ProgramMode::high;
-	options.outputpath = defaultHighSearchFileName;
-	break;
-	case RegExp:
-	options.reg = true;
-	break;
-     }
-     options.searchtextby = new char[MAXBUF];
-     memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF); 
-     
-     break;
+    case 'n':
+      ncursesoptions = getOption();
+      switch (ncursesoptions.engine) {
+      case HighHead:
+        options.mode = ProgramMode::high;
+        options.outputpath = defaultHighSearchFileName;
+        break;
+      case RegExp:
+        options.reg = true;
+        break;
+      }
+      options.searchtextby = new char[MAXBUF];
+      memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF);
+
+      break;
 
     case 'l':
       options.limit = atoi(optarg);
@@ -314,22 +315,23 @@ static inline void addKeyPair(BoxKeys data, std::string ipv6) {
 }
 
 static inline void miner(const char *prefix) {
-  if ( options.reg && prefix[0] != '^' && options.mode != ProgramMode::high){
-		std::cerr
-		 << "WARNING: " 
-		 << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"<< std::endl;
-		 sleep(15); // magic number
-  }else if(prefix[0] != '2' && options.mode != ProgramMode::high){
-		std::cerr << "WARNING: "
-		<< "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE YOU OKEY?!"
-		<< std::endl;
-		sleep(30); //magic number
+  if (options.reg && prefix[0] != '^' && options.mode != ProgramMode::high) {
+    std::cerr << "WARNING: "
+              << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"
+              << std::endl;
+    sleep(15); // magic number
+  } else if (prefix[0] != '2' && options.mode != ProgramMode::high) {
+    std::cerr << "WARNING: "
+              << "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE "
+                 "YOU OKEY?!"
+              << std::endl;
+    sleep(30); // magic number
   }
   auto clearconsole = [](int defsleep = 1) {
 #ifndef __linux__
     system("clear||cls");
 #else
-    std::cout << "\033[2J\033[1;1H";	
+    std::cout << "\033[2J\033[1;1H";
 #endif
     intro();
     std::cout << getRandomColor();
@@ -394,9 +396,9 @@ int main(int argc, char **argv) {
 
   for (unsigned int j = options.threads; j--;) {
     // std::cout << "thread " << j << " start" << std::endl;
-    threads[j] =
-        std::thread(static_cast<void (*)(const char *)>(miner), 
-		options.searchtextby == nullptr? argv[1]:options.searchtextby);
+    threads[j] = std::thread(
+        static_cast<void (*)(const char *)>(miner),
+        options.searchtextby == nullptr ? argv[1] : options.searchtextby);
     // std::cout << "thread " << j << " started" << std::endl;
   } // for
   for (unsigned int j = 0; j < (unsigned int)options.threads; j++)
