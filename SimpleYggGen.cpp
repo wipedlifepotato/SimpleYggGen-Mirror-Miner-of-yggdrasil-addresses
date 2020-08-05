@@ -151,7 +151,7 @@ void parsing(int argc, char **args) {
       std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
       options.regex = std::regex( options.searchtextby );
   };
-  while ((c = getopt_long(argc, args, "hr:t:s:o:Hsl:n", long_options,
+  while ((c = getopt_long(argc, args, "hr:t:so:Hsl:n", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
