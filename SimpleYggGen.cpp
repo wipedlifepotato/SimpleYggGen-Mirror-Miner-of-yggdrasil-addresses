@@ -147,7 +147,7 @@ void parsing(int argc, char **args) {
   auto setRegExp = [](const char*searchbytext){
       options.reg = true;
       options.searchtextby = new char[MAXBUF];
-      memcpy(options.searchtextby, searchbytext, strlen(optarg) );
+      memcpy(options.searchtextby, searchbytext, strlen(searchbytext) );
       std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
       options.regex = std::regex( options.searchtextby );
   };
