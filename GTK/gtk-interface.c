@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+ 
 static GtkBuilder *builder;
 static GtkWidget *window;
 
@@ -19,7 +20,27 @@ void on_start_clicked(void) {
   char command[sizeof(PrefixPatern) + COMANDBUF];
   sprintf(command, "./%s %s %s %s", PROGRAMNAME, PrefixPatern,
           regexp ? "-r" : "", highmode ? "-H" : "");
+#ifdef __linux__
+	#include <unistd.h> 
+	#include <sys/types.h> 
+	#include <sys/wait.h>
+pid_t pid=fork();
+if(pid==0){
+
+	static char *arguments[4];
+	arguments[0]=PrefixPatern;
+	arguments[1]=(regexp ? "-r" : "");
+	arguments[2]=(highmode ? "-H" : "");
+	arguments[3]=NULL;
+	execv("./"PROGRAMNAME,arguments);//TODO: /usr/bin/PROGRAMNAME?
+	exit(127);
+}else if(pid == getpid()){
+	waitpid(pid,0,0);
+}
+
+#else
   system(command);
+#endif
 }
 
 void on_high_mode_activated(GtkSwitch *data, gboolean state) {

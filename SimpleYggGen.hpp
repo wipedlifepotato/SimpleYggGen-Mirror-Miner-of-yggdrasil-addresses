@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #else
-#include <Winsock2.h>
+#include <winsock2.h>
 #endif
 
 #include <fstream>

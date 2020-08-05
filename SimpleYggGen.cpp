@@ -112,9 +112,9 @@ static inline bool NotThat(const char *a, const char *b) {
 
 void usage(void) {
   const constexpr char *help = NAMEPROGRAM
-      " [text-pattern|regex-pattern] [options]\n"
+      " [text-pattern(for just search by text, like to 200:ffff)] [options]\n"
       "-h --help, help menu\n"
-      "-r --reg,  regexp instead just text pattern (e.g. '(one|two).*')\n"
+      "-r --reg, (^2.*ffff.*$)  regexp instead just text pattern (e.g. '(one|two).*')\n"
       "--threads -t, (default count of system)\n"
       "-o --output output file (default keys.txt)\n"
       "--usage this menu\n"
@@ -132,7 +132,7 @@ void parsing(int argc, char **args) {
 
   static struct option long_options[] = {
       {"help", no_argument, 0, 'h'},
-      {"reg", no_argument, 0, 'r'},
+      {"reg", required_argument, 0, 'r'},
       {"threads", required_argument, 0, 't'},
       {"output", required_argument, 0, 'o'},
       {"usage", no_argument, 0, 0},
@@ -144,7 +144,14 @@ void parsing(int argc, char **args) {
 
   int c;
   OptionBox ncursesoptions;
-  while ((c = getopt_long(argc, args, "hrt:s:o:Hsl:n", long_options,
+  auto setRegExp = [](const char*searchbytext){
+      options.reg = true;
+      options.searchtextby = new char[MAXBUF];
+      memcpy(options.searchtextby, searchbytext, strlen(optarg) );
+      std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
+      options.regex = std::regex( options.searchtextby );
+  };
+  while ((c = getopt_long(argc, args, "hr:t:s:o:Hsl:n", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
@@ -162,11 +169,13 @@ void parsing(int argc, char **args) {
         break;
       case RegExp:
         options.reg = true;
+        setRegExp(ncursesoptions.searchtext);
+	//goto REGEXP;
         break;
+      default:
+      	 options.searchtextby = new char[MAXBUF];
+     	 memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF);       
       }
-      options.searchtextby = new char[MAXBUF];
-      memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF);
-
       break;
 
     case 'l':
@@ -185,7 +194,7 @@ void parsing(int argc, char **args) {
       exit(0);
       break;
     case 'r':
-      options.reg = true;
+      setRegExp(optarg);
       break;
     case 't':
       options.threads = atoi(optarg);
@@ -318,9 +327,9 @@ static inline void miner(const char *prefix) {
   if (options.reg && prefix[0] != '^' && options.mode != ProgramMode::high) {
     std::cerr << "WARNING: "
               << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"
-              << std::endl;
+              << std::endl << prefix << std::endl;
     sleep(15); // magic number
-  } else if (prefix[0] != '2' && options.mode != ProgramMode::high) {
+  } else if (prefix[0] != '2' && options.mode != ProgramMode::high && !options.reg) {
     std::cerr << "WARNING: "
               << "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE "
                  "YOU OKEY?!"
@@ -387,20 +396,17 @@ int main(int argc, char **argv) {
   options.outputpath = defaultSearchFileName;
   parsing(argc, argv);
 
-  if (options.reg)
-    options.regex = std::regex(argv[1]);
+
   if (options.threads < 0)
     options.threads = std::thread::hardware_concurrency();
   ;
   std::vector<std::thread> threads(options.threads);
 
   for (unsigned int j = options.threads; j--;) {
-    // std::cout << "thread " << j << " start" << std::endl;
     threads[j] = std::thread(
         static_cast<void (*)(const char *)>(miner),
         options.searchtextby == nullptr ? argv[1] : options.searchtextby);
-    // std::cout << "thread " << j << " started" << std::endl;
-  } // for
+  }
   for (unsigned int j = 0; j < (unsigned int)options.threads; j++)
     threads[j].join();
 }
