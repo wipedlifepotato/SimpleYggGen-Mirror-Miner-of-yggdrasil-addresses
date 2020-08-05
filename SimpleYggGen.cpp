@@ -104,10 +104,11 @@ static inline bool NotThat(const char *what, const std::regex &reg) {
 }
 
 static inline bool NotThat(const char *a, const char *b) {
-  while (*b)
-    if (*a++ != *b++)
-      return true;
-  return false;
+  //while (*b)
+   // if (*a++ != *b++)
+     // return true;
+  //return false;
+  return strstr(a, b) == 0 ? true : false;
 }
 
 void usage(void) {
@@ -119,7 +120,7 @@ void usage(void) {
       "-o --output output file (default keys.txt)\n"
       "--usage this menu\n"
       "--highhead -H mode of high head...\n"
-      "--searchadress -s (default) mode\n"
+      //"--searchadress -s (default) mode\n"
       "--limitfound=n -lN limit found\n"
       "--ncurses -n start ncurses interface\n"
       //"--prefix -p\n"
@@ -137,7 +138,7 @@ void parsing(int argc, char **args) {
       {"output", required_argument, 0, 'o'},
       {"usage", no_argument, 0, 0},
       {"highhead", no_argument, 0, 'H'},
-      {"searchadress", no_argument, 0, 's'},
+     // {"searchadress", no_argument, 0, 's'},
       {"limitfound", required_argument, 0, 'l'},
       {"ncurses", no_argument, 0, 'n'},
       {0, 0, 0, 0}};
@@ -151,7 +152,7 @@ void parsing(int argc, char **args) {
       std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
       options.regex = std::regex( options.searchtextby );
   };
-  while ((c = getopt_long(argc, args, "hr:t:so:Hsl:n", long_options,
+  while ((c = getopt_long(argc, args, "hr:t:o:Hsl:n", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
@@ -185,10 +186,10 @@ void parsing(int argc, char **args) {
       options.mode = ProgramMode::high;
       options.outputpath = defaultHighSearchFileName;
       break;
-    case 's':
+    /*case 's':
       options.mode = ProgramMode::search;
       options.outputpath = defaultSearchFileName;
-      break;
+      break;*/
     case 'h':
       usage();
       exit(0);
@@ -329,12 +330,6 @@ static inline void miner(const char *prefix) {
               << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"
               << std::endl << prefix << std::endl;
     sleep(15); // magic number
-  } else if (prefix[0] != '2' && options.mode != ProgramMode::high && !options.reg) {
-    std::cerr << "WARNING: "
-              << "YOU WANT TO FOUND ADRESS WHICH NOT EXIST IN YGGDRASIL, ARE "
-                 "YOU OKEY?!"
-              << std::endl;
-    sleep(30); // magic number
   }
   auto clearconsole = [](int defsleep = 1) {
 #ifndef __linux__
