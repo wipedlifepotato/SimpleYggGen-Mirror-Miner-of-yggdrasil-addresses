@@ -28,8 +28,8 @@ pid_t pid=fork();
 if(pid==0){
 
 	static char *arguments[4];
-	arguments[0]=PrefixPatern;
-	arguments[1]=(regexp ? "-r" : "");
+	arguments[0]=(regexp ? "-r" : "");
+	arguments[1]=PrefixPatern;
 	arguments[2]=(highmode ? "-H" : "");
 	arguments[3]=NULL;
 	execv("./"PROGRAMNAME,arguments);//TODO: /usr/bin/PROGRAMNAME?
