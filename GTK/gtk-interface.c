@@ -11,7 +11,7 @@ static gboolean regexp, highmode;
 void on_window_main_destroy(void) { gtk_main_quit(); }
 
 void on_start_clicked(void) {
-  if( strlen(PrefixPatern) < 1 ) return;
+  if( strlen(PrefixPatern) < 1 && !highmode ) return;
   puts("Start search");
   puts(PrefixPatern);
   if (regexp)
@@ -21,27 +21,8 @@ void on_start_clicked(void) {
   char command[sizeof(PrefixPatern) + COMANDBUF];
   sprintf(command, "./%s %s %s %s", PROGRAMNAME, 
           regexp ? "-r" : "",PrefixPatern, highmode ? "-H" : "");
-#ifdef __linux__
-	#include <unistd.h> 
-	#include <sys/types.h> 
-	#include <sys/wait.h>
-pid_t pid=fork();
-if(pid==0){
-
-	static char *arguments[4];
-	arguments[0]=(regexp ? "-r" : "");
-	arguments[1]=PrefixPatern;
-	arguments[2]=(highmode ? "-H" : "");
-	arguments[3]=NULL;
-	execv("./"PROGRAMNAME,arguments);//TODO: /usr/bin/PROGRAMNAME?
-	exit(127);
-}else if(pid == getpid()){
-	waitpid(pid,0,0);
-}
-
-#else
   system(command);
-#endif
+
 }
 
 void on_high_mode_activated(GtkSwitch *data, gboolean state) {
