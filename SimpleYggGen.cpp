@@ -248,11 +248,11 @@ void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH],
     sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
   }
 }
-char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], int &cOnes) {
+char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH]) {
   // char hash[128];
   // convertSHA512ToSum(h, hash);
   unsigned char byte;
-  bool done;
+  bool done=false;
   unsigned char lOnes = 0;
   unsigned char nBits = 0;
   unsigned char temp[SHA512_DIGEST_LENGTH];
@@ -288,12 +288,8 @@ char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], int &cOnes) 
     tmpAdr.s6_addr[i] = temp[i - 2];
   char *addr = (char *)calloc(INET6_ADDRSTRLEN, sizeof(char));
   inet_ntop(AF_INET6, &tmpAdr, addr, INET6_ADDRSTRLEN);
-  cOnes = lOnes;
+  if(lOnes > maxlones)	 maxlones=lOnes;
   return addr;
-}
-char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH]) {
-  int o;
-  return convertSHA512ToIPv6(hash, o);
 }
 
 std::mutex m_writeMutex;
@@ -353,13 +349,14 @@ static inline void miner(const char *prefix) {
     unsigned char hash[SHA512_DIGEST_LENGTH];
     getSHA512(myKeys.PublicKey, hash);
 
-    /*volatile */int ones;
-    auto ipv6 = options.mode == ProgramMode::high ? convertSHA512ToIPv6(hash, ones) : convertSHA512ToIPv6(hash);
+    int o=maxlones;
+    auto ipv6 = convertSHA512ToIPv6(hash);
     //printf("%s\n", ipv6);
     if (options.mode == ProgramMode::high) {
-      if (ones > maxlones) {
+	//std::cout << "addr: "
+          //        << "(" << maxlones << ") " << ipv6 << std::endl;
+      if (maxlones > o) {
         clearconsole();
-        maxlones = ones;
         std::cout << "Found new max high-addr: "
                   << "(" << maxlones << ") " << ipv6 << std::endl;
 	ADDKEYS(m_dataKey, myKeys, ipv6);//To inline?
