@@ -11,6 +11,7 @@ static gboolean regexp, highmode;
 void on_window_main_destroy(void) { gtk_main_quit(); }
 
 void on_start_clicked(void) {
+  if( strlen(PrefixPatern) < 1 ) return;
   puts("Start search");
   puts(PrefixPatern);
   if (regexp)
