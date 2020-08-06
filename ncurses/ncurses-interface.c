@@ -11,6 +11,7 @@ static void on_enter(const char *entry) {
   if (strstr(entry, ENTRY_EXIT)) {
     stopprogram = true;
     mvprintw(LINES - 1, 0, "BYE, BYE, BYE", entry);
+    exit(0);
   }
   ELIF(strstr(entry, ENTRY_HIGHMODE)) {
     mvprintw(LINES - 1, 0, "Enter to highhead mode?(enter/control+C)");
