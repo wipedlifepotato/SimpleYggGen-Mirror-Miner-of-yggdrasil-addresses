@@ -18,6 +18,7 @@ gtk:
 
 clear:
 	rm $(programname) $(GTKINTERFACENAME) # GTK.glade
+	cd $(GTKDIR) && make clear
 
 
 	

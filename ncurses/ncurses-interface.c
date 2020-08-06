@@ -11,7 +11,7 @@ static void on_enter(const char *entry) {
   if (strstr(entry, ENTRY_EXIT)) {
     stopprogram = true;
     mvprintw(LINES - 1, 0, "BYE, BYE, BYE", entry);
-    exit(0);
+    options.engine = Exit;
   }
   ELIF(strstr(entry, ENTRY_HIGHMODE)) {
     mvprintw(LINES - 1, 0, "Enter to highhead mode?(enter/control+C)");
@@ -30,7 +30,7 @@ static void on_enter(const char *entry) {
   // mvprintw(LINES - 1,0 , ITEMSELECTEDTEXT" %s", entry);
   attroff(COLOR_PAIR(2));
   refresh();
-  if (options.engine != HighHead)
+  if (options.engine != HighHead && !stopprogram)
     start_field();
   stopprogram = true;
 }

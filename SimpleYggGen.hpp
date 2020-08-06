@@ -25,6 +25,12 @@
 #define NAMEPROGRAM "SimpleYggGen"
 #define COAUTHORS "lialh4, orignal, i2pd-project."
 
+//to inline?
+#define ADDKEYS(to, from, ipv6){ \
+	memcpy(to.sk, from.PrivateKey, sizeof(from.PrivateKey)); \
+	memcpy(to.pk, from.PublicKey, sizeof(from.PublicKey));\
+	to.ip =std::string(ipv6);}
+
 constexpr auto defaultHighSearchFileName = "syg-highsearch.txt";
 constexpr auto defaultSearchFileName = "syg-search.txt"; //(reg)
 

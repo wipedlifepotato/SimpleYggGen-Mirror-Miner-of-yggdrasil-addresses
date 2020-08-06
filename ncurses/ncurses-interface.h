@@ -13,7 +13,7 @@ static const char ENTRY_REGEXPMODE[] = "Start RegExpMode";
 static const char ENTRY_SEARCHBYTEXTMODE[] = "Start SearchByText";
 static const char ENTRY_EXIT[] = "Exit";
 
-enum Mode { HighHead, SearchByText, RegExp };
+enum Mode { HighHead, SearchByText, RegExp, Exit };
 struct OptionBox {
   unsigned int countOfThreads;
   Mode engine;

@@ -87,7 +87,7 @@ void intro() {
 
 static unsigned int maxlones = 0;
 
-static dataKey pDatakey;
+static dataKey m_dataKey;
 
 static struct {
   bool reg = false;
@@ -173,6 +173,9 @@ void parsing(int argc, char **args) {
         setRegExp(ncursesoptions.searchtext);
 	//goto REGEXP;
         break;
+      case Exit:
+	exit(0);
+	break;
       default:
       	 options.searchtextby = new char[MAXBUF];
      	 memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF);       
@@ -245,8 +248,7 @@ void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH],
     sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
   }
 }
-char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH],
-                          BoxKeys myKeys, int &cOnes) {
+char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH], int &cOnes) {
   // char hash[128];
   // convertSHA512ToSum(h, hash);
   unsigned char byte;
@@ -289,37 +291,31 @@ char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH],
   cOnes = lOnes;
   return addr;
 }
-char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH],
-                          BoxKeys myKeys) {
+char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH]) {
   int o;
-  return convertSHA512ToIPv6(hash, myKeys, o);
+  return convertSHA512ToIPv6(hash, o);
 }
 
 std::mutex m_writeMutex;
-static inline void addKeyPair(BoxKeys data, std::string ipv6) {
+static inline void addKeyPair() {
   std::lock_guard<std::mutex> guard(m_writeMutex);
   std::ofstream f(options.outputpath, std::ofstream::out | std::ofstream::app);
   if (f) {
-    f << "~" << std::endl;
-    f << (options.mode == ProgramMode::high ? "HighMode" : "SearchMode")
-      << std::endl;
-    f << "Your keys: " << std::endl;
-    f << "Secret key: ";
-    for (int i = 0; i < KEYSIZE; ++i) {
-      f << std::setw(2) << std::setfill('0') << std::hex
-        << (int)data.PrivateKey[i];
-    }
-    f << std::endl;
+	f << "Your keys: " << std::endl;
+	f << "Public Key: ";
+	for(int i = 0; i < 32; ++i)
+	{
+	 f << std::setw(2) << std::setfill('0') << std::hex << (int)m_dataKey.pk[i];
+	}
+	f << std::endl;
 
-    f << "Public Key: ";
-    for (int i = 0; i < 32; ++i) {
-      f << std::setw(2) << std::setfill('0') << std::hex
-        << (int)data.PublicKey[i];
-    }
-
-    f << std::endl;
-    f << "IPv6: " << ipv6 << std::endl;
-    f << "~" << std::endl;
+	f << "Secret key: ";
+	for(int i = 0; i < KEYSIZE; ++i)
+	{
+	 f << std::setw(2) << std::setfill('0') << std::hex << (int)m_dataKey.sk[i];
+	}
+	f << std::endl;
+	f << "IPv6: " <<m_dataKey.ip << std::endl;
   } else
     std::cout << "Can't create/reopen file " << options.outputpath << std::endl;
 }
@@ -356,26 +352,30 @@ static inline void miner(const char *prefix) {
     auto myKeys = getKeyPair();
     unsigned char hash[SHA512_DIGEST_LENGTH];
     getSHA512(myKeys.PublicKey, hash);
-    char *ipv6 = convertSHA512ToIPv6(hash, myKeys);
+
+    /*volatile */int ones;
+    auto ipv6 = options.mode == ProgramMode::high ? convertSHA512ToIPv6(hash, ones) : convertSHA512ToIPv6(hash);
+    //printf("%s\n", ipv6);
     if (options.mode == ProgramMode::high) {
-      int ones;
-      ipv6 = convertSHA512ToIPv6(hash, myKeys, ones);
       if (ones > maxlones) {
         clearconsole();
         maxlones = ones;
         std::cout << "Found new max high-addr: "
                   << "(" << maxlones << ") " << ipv6 << std::endl;
-        addKeyPair(myKeys, ipv6);
+	ADDKEYS(m_dataKey, myKeys, ipv6);//To inline?
+        addKeyPair();
       }
     } else {
-      ipv6 = convertSHA512ToIPv6(hash, myKeys);
+      //ipv6 = convertSHA512ToIPv6(hash);
       if ((options.reg ? !NotThat(ipv6, options.regex)
                        : !NotThat(ipv6, prefix))) {
         clearconsole();
         std::cout << "Address found: "
                   << "(" << ++foundAddreses << ") " << ipv6;
         std::cout << std::flush;
-        addKeyPair(myKeys, ipv6);
+	ADDKEYS(m_dataKey, myKeys, ipv6);
+
+        addKeyPair();
         // delete newKey.sk; // not need. not-heap..
       }
     }
