@@ -18,8 +18,8 @@ void on_start_clicked(void) {
   if (highmode)
     puts("highmode true");
   char command[sizeof(PrefixPatern) + COMANDBUF];
-  sprintf(command, "./%s %s %s %s", PROGRAMNAME, PrefixPatern,
-          regexp ? "-r" : "", highmode ? "-H" : "");
+  sprintf(command, "./%s %s %s %s", PROGRAMNAME, 
+          regexp ? "-r" : "",PrefixPatern, highmode ? "-H" : "");
 #ifdef __linux__
 	#include <unistd.h> 
 	#include <sys/types.h> 
