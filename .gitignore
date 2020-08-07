@@ -2,3 +2,8 @@ keys.txt
 SimpleYggGen
 interface
 GTK.glade
+GTK/gtk-interface.o
+core
+syg-highsearch.txt
+syg-search.txt
+
