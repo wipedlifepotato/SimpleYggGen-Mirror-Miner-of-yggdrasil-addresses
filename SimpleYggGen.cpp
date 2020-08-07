@@ -34,6 +34,7 @@ static inline std::string getrandom(int entropy, unsigned int size_of_line) {
 }
 #ifdef __linux__
 constexpr const char *RST = "\x1B[0m";
+#endif
 static inline std::string getRandomColor() {
 #ifndef __linux__
   return "";
