@@ -51,6 +51,5 @@ BoxKeys getKeyPair(void);
 void getSHA512(void *data, unsigned char *hash);
 void convertSHA512ToSum(unsigned char hash[SHA512_DIGEST_LENGTH],
                         char outputBuffer[128]);
-char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH],
-                          BoxKeys keys);
+char *convertSHA512ToIPv6(unsigned char hash[SHA512_DIGEST_LENGTH]);
 int miner(void);

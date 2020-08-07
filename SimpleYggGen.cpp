@@ -111,6 +111,20 @@ static inline bool NotThat(const char *a, const char *b) {
   return strstr(a, b) == 0 ? true : false;
 }
 
+inline static void hexKeyToIpv6(const char* arg){
+    unsigned char pubkey[SHA512_DIGEST_LENGTH];
+
+    
+    for(int i = 0; i < strlen(arg) / 2; i++) {
+	sscanf(arg + i * 2, "%02hhX", pubkey + i);
+    }
+    unsigned char hash[SHA512_DIGEST_LENGTH];
+    getSHA512(pubkey, hash);
+	
+    std::cout << "IPv6: " << convertSHA512ToIPv6(hash) << std::endl; 
+    exit(0);
+}
+
 void usage(void) {
   const constexpr char *help = NAMEPROGRAM
       " [text-pattern(for just search by text, like to 200:ffff)] [options]\n"
@@ -141,6 +155,7 @@ void parsing(int argc, char **args) {
      // {"searchadress", no_argument, 0, 's'},
       {"limitfound", required_argument, 0, 'l'},
       {"ncurses", no_argument, 0, 'n'},
+      {"keytoipv6", no_argument, 0, 'k'},
       {0, 0, 0, 0}};
 
   int c;
@@ -152,7 +167,7 @@ void parsing(int argc, char **args) {
       std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
       options.regex = std::regex( options.searchtextby );
   };
-  while ((c = getopt_long(argc, args, "hr:t:o:Hsl:n", long_options,
+  while ((c = getopt_long(argc, args, "hr:t:o:Hsl:nk:", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
@@ -206,6 +221,9 @@ void parsing(int argc, char **args) {
     case 'o':
       options.outputpath = optarg;
       break;
+    case 'k':
+	hexKeyToIpv6(optarg);
+	break;
     case '?':
       std::cerr << "Undefined argument" << std::endl;
     default:
