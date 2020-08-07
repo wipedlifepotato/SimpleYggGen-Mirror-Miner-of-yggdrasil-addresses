@@ -50,7 +50,6 @@ static inline std::string getRandomColor() {
 
   return str.str();
 }
-#endif
 
 void intro() {
   srand(time(NULL));

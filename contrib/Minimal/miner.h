@@ -1,4 +1,9 @@
 #include"ipv6.h"
 #include"boxKeys.h"
 #include"SHA512.h"
-void miner(void);
+struct addrBox{
+	BoxKeys keys;
+	char * ipv6 ;
+};
+
+struct addrBox miner(const char*);
