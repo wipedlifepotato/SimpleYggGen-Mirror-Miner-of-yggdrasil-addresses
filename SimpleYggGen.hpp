@@ -3,11 +3,13 @@
 #include <openssl/sha.h>
 #include <string.h>
 #ifdef __linux__
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+	#include <arpa/inet.h>
+	#include <sys/socket.h>
+	#include <sys/types.h>
 #else
-#include <winsock2.h>
+	#include <winsock2.h>
+	#define _WIN32_WINNT _WIN32_WINNT_WIN8 // Windows 8.0
+	#include <ws2tcpip.h> // -lws2_32
 #endif
 
 #include <fstream>
