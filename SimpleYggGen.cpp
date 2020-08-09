@@ -8,9 +8,7 @@
 
 #include "SimpleYggGen.hpp"
 #include "ncurses/ncurses-interface.h"
-#include <mutex>
 #include <unistd.h>
-
 // extern OptionBox getOption(void);
 static unsigned long long foundAddreses = 0;
 
