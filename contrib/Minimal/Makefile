@@ -1,4 +1,5 @@
 all:
-	gcc *.c -lcrypto
+	gcc *.c  -lcrypto
 mingw32:
-	i686-w64-mingw32-gcc *.c -lws2_32 -lcrypto
+	x86_64-w64-mingw32-gcc *.c -I/home/user/openssl/include -L/home/user/openssl -lcrypto -lws2_32
+	

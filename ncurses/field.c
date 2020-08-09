@@ -7,8 +7,6 @@
 #include "ncurses-interface.h"
 #include <assert.h>
 #include <ctype.h>
-#include <form.h>
-#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
 extern OptionBox options;

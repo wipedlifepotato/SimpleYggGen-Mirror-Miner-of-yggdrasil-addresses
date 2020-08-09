@@ -6,6 +6,8 @@ ncursesoptions=-lform -lmenu -lncurses -fpermissive
 programname=SimpleYggGen
 CXFLAG=-std=gnu++11
 GTKINTERFACENAME=interface
+MINGWNCURSESWDIR=/home/user/ncursesw/
+MINGWOPENSSLDIR=/home/user/openssl/
 c = gcc
 GTKDIR=GTK
 all: SimpleYggGen gtk 
@@ -19,6 +21,10 @@ gtk:
 clear:
 	rm $(programname) $(GTKINTERFACENAME) # GTK.glade
 	cd $(GTKDIR) && make clear
+
+mingw32:
+	i686-w64-mingw32-g++-posix $(files) $(ncursesfiles) -I$(MINGWNCURSESWDIR)/include/ -L$(MINGWNCURSESWDIR)/lib/ -lncursesw -lformw -lmenuw -fpermissive -I$(MINGWOPENSSLDIR)/include -L$(MINGWOPENSSLDIR) -lcrypto -lws2_32 -lpthread
+	
 
 
 	

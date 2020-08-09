@@ -1,6 +1,12 @@
-#include <curses.h>
-#include <form.h>
-#include <menu.h>
+#ifdef __linux__
+	#include <ncurses.h>
+	#include <form.h>
+	#include <menu.h>
+#else
+#include<ncursesw/ncurses.h>
+#include<ncursesw/form.h>
+#include<ncursesw/menu.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
