@@ -18,13 +18,13 @@ static inline void getRandomColor() {
 
 
 __attribute__((constructor)) void intro() {
-    static const char randomtable[] = {
+   /* static const char randomtable[] = {
 	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
 	    'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
 	    'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
 	    'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
 	    'Y', 'Z', '!', '@', '(', ')', '/', '-', '#', '+', '$', '%', '^', '&', '*',
-	    '`', '~', '>', '<', '?', '{', '}', '[', ']', ';', ':', '_', '=', '|', '\''};
+	    '`', '~', '>', '<', '?', '{', '}', '[', ']', ';', ':', '_', '=', '|', '\''};*/
 
   srand(time(NULL));
   int rv = 60;
@@ -32,6 +32,7 @@ __attribute__((constructor)) void intro() {
 #define GETRANDOM(entropy, size_of_line){\
 char tmp[size_of_line];tmp[size_of_line-1]=0;\
 for(int i=size_of_line-1;i--;) sprintf(tmp[i], "%c", (rand() % entropy));\
+printf("%s",tmp);\
 }
 puts(__FILE__" "__DATE__);
 #ifdef __linux__
