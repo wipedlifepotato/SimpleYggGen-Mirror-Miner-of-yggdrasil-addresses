@@ -2,7 +2,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <string.h>
-#ifdef __linux__
+#ifndef __WIN32
 	#include <arpa/inet.h>
 	#include <sys/socket.h>
 	#include <sys/types.h>
@@ -10,6 +10,8 @@
 	#include <winsock2.h>
 	#define _WIN32_WINNT _WIN32_WINNT_WIN8 // Windows 8.0
 	#include <ws2tcpip.h> // -lws2_32
+	#include <omp.h>
+	#include<windows.h>
 #endif
 
 #include <thread>

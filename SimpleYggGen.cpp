@@ -5,12 +5,17 @@
  * acetone (c) GPLv3
  *
  */
+#ifndef __win32
+	#include <sched.h>
+#endif
+
 
 #include "SimpleYggGen.hpp"
 #include "ncurses/ncurses-interface.h"
 #include <unistd.h>
 // extern OptionBox getOption(void);
 static unsigned long long foundAddreses = 0;
+constexpr auto count_precompiled_keys = 10000;
 
 //////////////////////////////////////////////////begin Заставка и прочая вода
 
@@ -333,6 +338,14 @@ static inline void addKeyPair() {
 }
 
 static inline void miner(const char *prefix) {
+#ifdef __WIN32
+	    #pragma omp parallel 
+	    {
+		HANDLE thread = GetCurrentThread();
+		DWORD_PTR threadAffinityMask = 1<<(2*omp_get_thread_num());
+		SetThreadAffinityMask(thread, threadAffinityMask);
+	    }
+#endif
   if (options.reg && prefix[0] != '^' && options.mode != ProgramMode::high) {
     std::cerr << "WARNING: "
               << "IF YOU DONT KNOW REGEXP PLEASE SEE IT -> https://regexr.com/"
@@ -345,56 +358,51 @@ static inline void miner(const char *prefix) {
 #else
     std::cout << "\033[2J\033[1;1H";
 #endif
-    intro();
-    std::cout << getRandomColor();
-    std::cout << "\b\b\b..." << std::flush;
-    usleep(defsleep);
-    std::cout << "\b\b\b.U." << std::flush;
-    usleep(defsleep);
-    std::cout << "\b\b\b..U" << std::flush;
-    usleep(defsleep);
-    std::cout << "\b\b\bvvU" << std::flush;
-    usleep(defsleep);
-    std::cout << "\b\b\bUvU" << std::flush;
-    std::cout << "\b\b\b|" << std::flush;
   };
   while (options.limit < 0 || options.limit > foundAddreses) {
-    std::cout << "\b/" << std::flush;
-    std::cout << "\b\\" << std::flush;
-    auto myKeys = getKeyPair();
-    unsigned char hash[SHA512_DIGEST_LENGTH];
-    getSHA512(myKeys.PublicKey, hash);
-
-    int o=maxlones;
-    auto ipv6 = convertSHA512ToIPv6(hash);
-    //printf("%s\n", ipv6);
-    if (options.mode == ProgramMode::high) {
-	//std::cout << "addr: "
-          //        << "(" << maxlones << ") " << ipv6 << std::endl;
-      if (maxlones > o) {
-        clearconsole();
-        std::cout << "Found new max high-addr: "
-                  << "(" << maxlones << ") " << ipv6 << std::endl;
-	ADDKEYS(m_dataKey, myKeys, ipv6);//To inline?
-        addKeyPair();
-      }
-    } else {
-      //ipv6 = convertSHA512ToIPv6(hash);
-      if ((options.reg ? !NotThat(ipv6, options.regex)
-                       : !NotThat(ipv6, prefix))) {
-        clearconsole();
-        std::cout << "Address found: "
-                  << "(" << ++foundAddreses << ") " << ipv6;
-        std::cout << std::flush;
-	ADDKEYS(m_dataKey, myKeys, ipv6);
-
-        addKeyPair();
-        // delete newKey.sk; // not need. not-heap..
-      }
+    std::vector< BoxKeys > Keys ;
+    for(auto i = count_precompiled_keys;i--;){
+	Keys.push_back( getKeyPair() );
     }
-    free(ipv6);
-  }
-}
+    for( auto myKeys : Keys ){
+	    //auto myKeys = getKeyPair();
+	    unsigned char hash[SHA512_DIGEST_LENGTH];
+	    getSHA512(myKeys.PublicKey, hash);
+
+	    int o=maxlones;
+	    auto ipv6 = convertSHA512ToIPv6(hash);
+	    //printf("%s\n", ipv6);
+	    std::cout << "\b/" << std::flush;
+	    std::cout << "\b\\" << std::flush;
+
+	    if (options.mode == ProgramMode::high) {
+		//std::cout << "addr: "
+		  //        << "(" << maxlones << ") " << ipv6 << std::endl;
+	      if (maxlones > o) {
+		clearconsole();
+		std::cout << "Found new max high-addr: "
+		          << "(" << maxlones << ") " << ipv6 << std::endl;
+		ADDKEYS(m_dataKey, myKeys, ipv6);//To inline?
+		addKeyPair();
+	      }
+	    } else {
+	      //ipv6 = convertSHA512ToIPv6(hash);
+	      if ((options.reg ? !NotThat(ipv6, options.regex)
+		               : !NotThat(ipv6, prefix))) {
+		clearconsole();
+		std::cout << "Address found: "
+		          << "(" << ++foundAddreses << ") " << ipv6;
+		std::cout << std::flush;
+		ADDKEYS(m_dataKey, myKeys, ipv6);
+
+		addKeyPair();
+		// delete newKey.sk; // not need. not-heap..
+	      }
+	    }
+	    free(ipv6);
+	  }
+	}
+} 
 int main(int argc, char **argv) {
   intro();
   if (argc < 2) {
@@ -407,14 +415,42 @@ int main(int argc, char **argv) {
 
   if (options.threads < 0)
     options.threads = std::thread::hardware_concurrency();
-  ;
-  std::vector<std::thread> threads(options.threads);
 
+  std::vector<std::thread> threads(options.threads);
+#ifndef __WIN32
+  cpu_set_t * cpu, cpuset;
+  auto setaffinity = [&cpu](){
+
+	auto cpus = sysconf(_SC_NPROCESSORS_ONLN); 
+	cpu = CPU_ALLOC(cpus);// ALLOC cp
+	sched_setaffinity(0, sizeof(cpu), cpu);
+  };
+#else
+  auto setaffinity = [](){// 
+	    HANDLE process;
+	    DWORD_PTR processAffinityMask;
+	    //Windows uses a compact thread topology.  Set mask to every other thread
+	    for(int i=0; i<options.threads; i++) processAffinityMask |= 1<<(2*i);
+	    process = GetCurrentProcess();
+	    SetProcessAffinityMask(process, processAffinityMask);
+  };	
+#endif
+  setaffinity(); // not need if true as and pthread_setaffinity_np
+  
   for (unsigned int j = options.threads; j--;) {
     threads[j] = std::thread(
         static_cast<void (*)(const char *)>(miner),
         options.searchtextby == nullptr ? argv[1] : options.searchtextby);
+#ifndef __WIN32
+    CPU_ZERO(&cpuset);
+    CPU_SET(j, &cpuset);
+    int rc = pthread_setaffinity_np(threads[j].native_handle(),
+      	                              sizeof(cpu_set_t), &cpuset);
+    if( rc != 0 ) std::cerr	 << "WARNING: SetAffinity failed for thread " << j << std::endl;
+#endif
   }
+  
+
   for (unsigned int j = 0; j < (unsigned int)options.threads; j++)
     threads[j].join();
 }
