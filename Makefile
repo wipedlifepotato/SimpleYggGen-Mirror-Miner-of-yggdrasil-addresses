@@ -24,7 +24,7 @@ clear:
 	cd $(GTKDIR) && make clear
 
 mingw32:
-	i686-w64-mingw32-g++-posix $(files) $(OPTIMIZATIONFLAG) $(ncursesfiles) -I$(MINGWNCURSESWDIR)/include/ -L$(MINGWNCURSESWDIR)/lib/ -lncursesw -lformw -lmenuw -fpermissive -I$(MINGWOPENSSLDIR)/include -L$(MINGWOPENSSLDIR) -lcrypto -lws2_32 -lpthread -static-libstdc++ -static-libgcc -fopenmp
+	i686-w64-mingw32-g++-posix $(files) $(OPTIMIZATIONFLAG) $(ncursesfiles) -I$(MINGWNCURSESWDIR)/include/ -L$(MINGWNCURSESWDIR)/lib/ -lncursesw -lformw -lmenuw -fpermissive -I$(MINGWOPENSSLDIR)/include -L$(MINGWOPENSSLDIR) -lcrypto -lws2_32 -lpthread -static-libstdc++ -static-libgcc -l:libgomp.a 
 	
 
 

@@ -130,14 +130,14 @@ inline static void hexKeyToIpv6(const char* arg){
 
 void usage(void) {
   const constexpr char *help = NAMEPROGRAM
-      " [text-pattern(for just search by text, like to 200:ffff)] [options]\n"
+      " [text-pattern(for just search by text, like to 200:ffff)] / [options]\n"
       "-h --help, help menu\n"
       "-r --reg, (^2.*ffff.*$)  regexp instead just text pattern (e.g. '(one|two).*')\n"
       "--threads -t, (default count of system)\n"
       "-o --output output file (default keys.txt)\n"
       "--usage this menu\n"
       "--highhead -H mode of high head...\n"
-      //"--searchadress -s (default) mode\n"
+      "--searchadress=cafe -s cafe \n"
       "--limitfound=n -lN limit found\n"
       "--ncurses -n start ncurses interface\n"
       //"--prefix -p\n"
@@ -155,7 +155,7 @@ void parsing(int argc, char **args) {
       {"output", required_argument, 0, 'o'},
       {"usage", no_argument, 0, 0},
       {"highhead", no_argument, 0, 'H'},
-     // {"searchadress", no_argument, 0, 's'},
+      {"searchadress", required_argument, 0, 's'},
       {"limitfound", required_argument, 0, 'l'},
       {"ncurses", no_argument, 0, 'n'},
       {"keytoipv6", no_argument, 0, 'k'},
@@ -163,14 +163,22 @@ void parsing(int argc, char **args) {
 
   int c;
   OptionBox ncursesoptions;
-  auto setRegExp = [](const char*searchbytext){
+  auto setSearchTextBy = []( const char * searchbytext ){
+	 if(searchbytext == 0) {
+		throw( std::runtime_error ( "setSearchTextBy nullptr"));
+	 }
+      	 options.searchtextby = new char[strlen(searchbytext)+1];
+	 memset(options.searchtextby, 0, strlen(searchbytext)+1);
+	// options.searchtextby[strlen(searchbytext)-1]=0;
+     	 memcpy(options.searchtextby, searchbytext, strlen( searchbytext ));       
+  };
+  auto setRegExp = [&setSearchTextBy](const char*searchbytext){
       options.reg = true;
-      options.searchtextby = new char[MAXBUF];
-      memcpy(options.searchtextby, searchbytext, strlen(searchbytext) );
+      setSearchTextBy( searchbytext );
       std::cout << "RegExp pattern: "<<searchbytext << std::endl;	
       options.regex = std::regex( options.searchtextby );
   };
-  while ((c = getopt_long(argc, args, "hr:t:o:Hsl:nk:", long_options,
+  while ((c = getopt_long(argc, args, "hr:t:o:Hs:l:nk:", long_options,
                           &option_index)) != -1) {
     switch (c) {
     case 0:
@@ -195,8 +203,7 @@ void parsing(int argc, char **args) {
 	exit(0);
 	break;
       default:
-      	 options.searchtextby = new char[MAXBUF];
-     	 memcpy(options.searchtextby, ncursesoptions.searchtext, MAXBUF);       
+         setSearchTextBy( ncursesoptions.searchtext );
       }
       break;
 
@@ -207,10 +214,9 @@ void parsing(int argc, char **args) {
       options.mode = ProgramMode::high;
       options.outputpath = defaultHighSearchFileName;
       break;
-    /*case 's':
-      options.mode = ProgramMode::search;
-      options.outputpath = defaultSearchFileName;
-      break;*/
+    case 's':
+         setSearchTextBy( optarg );
+      break;
     case 'h':
       usage();
       exit(0);
@@ -353,7 +359,7 @@ static inline void miner(const char *prefix) {
     sleep(15); // magic number
   }
   auto clearconsole = [](int defsleep = 1) {
-#ifndef __linux__
+#ifdef __WIN32
     system("clear||cls");
 #else
     std::cout << "\033[2J\033[1;1H";
@@ -364,6 +370,8 @@ static inline void miner(const char *prefix) {
     for(auto i = count_precompiled_keys;i--;){
 	Keys.push_back( getKeyPair() );
     }
+   // std::cout << "Start mining '" << prefix << "'" << std::endl;
+
     for( auto myKeys : Keys ){
 	    //auto myKeys = getKeyPair();
 	    unsigned char hash[SHA512_DIGEST_LENGTH];
